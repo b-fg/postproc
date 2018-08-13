@@ -35,6 +35,3 @@ def find_num_periods(y):
             n_periods += 1
 
     return n_periods-1
-
-def my_test():
-    return 5
