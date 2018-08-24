@@ -8,7 +8,7 @@
 import numpy as np
 
 # Internal functions
-def read_data(file, shape, dtype, stream, periodic):
+def read_data(file, shape, **kwargs):
     """
     Return the velocity components of a velocity vector field stored in binary format.
     The data field is supposed to have been written as: (for k; for j; for i;) where the last dimension
@@ -18,68 +18,112 @@ def read_data(file, shape, dtype, stream, periodic):
         file: file to read from
         shape: Shape of the data as (Nx,Ny) for 2D or (Nx,Ny,Nz) for 3D.
         dtype: numpy dtype object. Single or double precision expected.
-        stream: type of access of the binary output. If true, only a pure binary output of the velocity
-            vector field is assumed. If false, there is a 4-byte header and footer around each "record"
-            in the binary file (can happen in some Fortran compilers if access != 'stream').
+        stream (depracated, use always stream output): type of access of the binary output. If false, there is a 4-byte header
+            and footer around each "record" in the binary file (means +2 components at each record) (can happen in some
+            Fortran compilers if access != 'stream').
         periodic: If the user desires to make the data spanwise periodic (true) or not (false).
+        ncomponents: Specify the number of components. Default = ndims of the field
     """
+    if not 'dtype' in kwargs:
+        dtype = np.single
+    else:
+        dtype = kwargs['dtype']
+    if not 'periodic' in kwargs:
+        periodic = False
+    else:
+        periodic = kwargs['periodic']
+    if not 'ncomponents' in kwargs:
+        ncomponents = len(shape)
+    else:
+        ncomponents = kwargs['ncomponents']
+
     shape = tuple(reversed(shape))
+    shape_comp = shape + (ncomponents,)
+
+    f = open(file, 'rb')
+    data = np.fromfile(file=f, dtype=dtype).reshape(shape_comp)
+    f.close()
+
     if len(shape) == 2:
-        if stream:
-            shape_rec = shape + (2,)
-            f = open(file, 'rb')
-            data = np.fromfile(file=f, dtype=dtype).reshape(shape_rec)
-            f.close()
+        if ncomponents == 1:
+            u = data[:, :, 0].transpose(1, 0)
+            u = u.astype(np.float64, copy=False)
+            del data
+            return u
+        elif ncomponents == 2:
             u = data[:, :, 0].transpose(1, 0)
             v = data[:, :, 1].transpose(1, 0)
             del data
-        else:
-            shape_rec = shape + (4,)
-            f = open(file, 'rb')
-            data = np.fromfile(file=f, dtype=dtype).reshape(shape_rec)
-            f.close()
-            u = data[:, :, 1].transpose(1, 0)
-            v = data[:, :, 2].transpose(1, 0)
+            u = u.astype(np.float64, copy=False)
+            v = v.astype(np.float64, copy=False)
+            return u, v
+        elif ncomponents == 3:
+            u = data[:, :, 0].transpose(1, 0)
+            v = data[:, :, 1].transpose(1, 0)
+            w = data[:, :, 2].transpose(1, 0)
             del data
-        u = u.astype(np.float64, copy=False)
-        v = v.astype(np.float64, copy=False)
-        return u, v
-    if len(shape) == 3:
-        if stream:
-            shape_rec = shape + (3,)
-            f = open(file, 'rb')
-            data = np.fromfile(file=f, dtype=dtype).reshape(shape_rec)
-            f.close()
+            u = u.astype(np.float64, copy=False)
+            v = v.astype(np.float64, copy=False)
+            w = w.astype(np.float64, copy=False)
+            return u, v, w
+        else:
+            return -1
+    elif len(shape) == 3:
+        if ncomponents == 1:
+            u = data[:, :, :, 0].transpose(2, 1, 0)
+            del data
+            if periodic:
+                u = np.dstack((u, u[:, :, 0]))
+            u = u.astype(np.float64, copy=False)
+            return u
+        elif ncomponents == 2:
+            u = data[:, :, :, 0].transpose(2, 1, 0)
+            v = data[:, :, :, 1].transpose(2, 1, 0)
+            del data
+            if periodic:
+                u = np.dstack((u, u[:, :, 0]))
+                v = np.dstack((v, v[:, :, 0]))
+            u = u.astype(np.float64, copy=False)
+            v = v.astype(np.float64, copy=False)
+            return u, v
+        elif ncomponents == 3:
             u = data[:, :, :, 0].transpose(2, 1, 0)
             v = data[:, :, :, 1].transpose(2, 1, 0)
             w = data[:, :, :, 2].transpose(2, 1, 0)
             del data
+            if periodic:
+                u = np.dstack((u, u[:, :, 0]))
+                v = np.dstack((v, v[:, :, 0]))
+                w = np.dstack((w, w[:, :, 0]))
+            u = u.astype(np.float64, copy=False)
+            v = v.astype(np.float64, copy=False)
+            w = w.astype(np.float64, copy=False)
+            return u, v, w
         else:
-            shape_rec = shape + (5,)
-            f = open(file, 'rb')
-            data = np.fromfile(file=f, dtype=dtype).reshape(shape_rec)
-            f.close()
-            u = data[:, :, :, 1].transpose(2, 1, 0)
-            v = data[:, :, :, 2].transpose(2, 1, 0)
-            w = data[:, :, :, 3].transpose(2, 1, 0)
-            del data
-        # Make the data periodic
-        if periodic:
-            u = np.dstack((u, u[:, :, 0]))
-            v = np.dstack((v, v[:, :, 0]))
-            w = np.dstack((w, w[:, :, 0]))
-        # Convert to double precision
-        u = u.astype(np.float64, copy=False)
-        v = v.astype(np.float64, copy=False)
-        w = w.astype(np.float64, copy=False)
-        return u, v, w
+            return -2
     else:
-        return -1
+        return -3
+
 
 def unpack2Dforces(D, file):
     tD, dt, fx, fy, _, _ = np.loadtxt(file, unpack=True)  # 2D
     return tD*D, fx, fy
 
+
 def unpack3Dforces(D, file):
     tD, dt, fx, fy, _, _, _, _ = np.loadtxt(file, unpack=True) #3D
     return tD*D, fx, fy
+
+
+def unpackTimeSeries(npoints, file):
+    if npoints == 1:
+        p = np.loadtxt(file, unpack=True)  # 3D
+        return p
+    elif npoints == 2:
+            p1, p2 = np.loadtxt(file, unpack=True)  # 3D
+            return p1, p2
+    elif npoints == 3:
+            p1, p2, p3 = np.loadtxt(file, unpack=True)  # 3D
+            return p1, p2, p3
+    else:
+        return -1

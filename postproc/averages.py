@@ -60,4 +60,16 @@ def vortz(u, v):
     """
     Return the z-vorticity of a two-dimensional velocity fild
     """
-    return ddx(v)-ddy(u)
+    if not (len(u.shape)==2 and len(v.shape)==2):
+        raise ValueError("Fields must be two-dimensional")
+    else:
+        return ddx(v)-ddy(u)
+
+def vort(u, v, w, periodic):
+    """
+    Return the vorticity of a three-dimensional velocity fild
+    """
+    if not (len(u.shape)==3 and len(v.shape)==3 and len(w.shape)==3):
+        raise ValueError("Fields must be three-dimensional")
+    else:
+        return ddy(w)-ddz(v, periodic), ddz(u, periodic)-ddx(w), ddx(v)-ddy(u)
