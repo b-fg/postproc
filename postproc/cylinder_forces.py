@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 @author: B. Font Garcia
-@description: CL CD St calculations
+@description: CL CD St rms calculations
 @contact: b.fontgarcia@soton.ac.uk
 """
 # Imports
@@ -33,5 +33,4 @@ def find_num_periods(y):
     for i in np.arange(0, len(y)-2):
         if y[i]>0 and y[i+1] <= 0:
             n_periods += 1
-
     return n_periods-1

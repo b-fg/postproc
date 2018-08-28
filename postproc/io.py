@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 """
 @author: B. Font Garcia
-@description: CL CD St calculations
+@description: Input/output module to read bindary Fortran data of 2D and 3D fields with different
+    number of components. Also useful to unpack text data in column-written.
 @contact: b.fontgarcia@soton.ac.uk
 """
 # Imports
@@ -15,14 +16,14 @@ def read_data(file, shape, **kwargs):
     is the quickest varying index. Each record should have been written as: u, v, w.
     The return velocity components are always converted in np.double precision type.
     Args:
-        file: file to read from
-        shape: Shape of the data as (Nx,Ny) for 2D or (Nx,Ny,Nz) for 3D.
-        dtype: numpy dtype object. Single or double precision expected.
-        stream (depracated, use always stream output): type of access of the binary output. If false, there is a 4-byte header
+        - file: file to read from
+        - shape: Shape of the data as (Nx,Ny) for 2D or (Nx,Ny,Nz) for 3D.
+        - dtype: numpy dtype object. Single or double precision expected.
+        - stream (depracated, use always stream output): type of access of the binary output. If false, there is a 4-byte header
             and footer around each "record" in the binary file (means +2 components at each record) (can happen in some
             Fortran compilers if access != 'stream').
-        periodic: If the user desires to make the data spanwise periodic (true) or not (false).
-        ncomponents: Specify the number of components. Default = ndims of the field
+        - periodic: If the user desires to make the data spanwise periodic (true) or not (false).
+        - ncomponents: Specify the number of components. Default = ndims of the field
     """
     if not 'dtype' in kwargs:
         dtype = np.single
@@ -67,7 +68,7 @@ def read_data(file, shape, **kwargs):
             w = w.astype(np.float64, copy=False)
             return u, v, w
         else:
-            return -1
+            raise ValueError("Number of components is not <=3")
     elif len(shape) == 3:
         if ncomponents == 1:
             u = data[:, :, :, 0].transpose(2, 1, 0)
@@ -100,9 +101,9 @@ def read_data(file, shape, **kwargs):
             w = w.astype(np.float64, copy=False)
             return u, v, w
         else:
-            return -2
+            raise ValueError("Number of components is not <=3")
     else:
-        return -3
+        raise ValueError("Shape is not two- nor three-dimensional")
 
 
 def unpack2Dforces(D, file):
@@ -126,4 +127,4 @@ def unpackTimeSeries(npoints, file):
             p1, p2, p3 = np.loadtxt(file, unpack=True)  # 3D
             return p1, p2, p3
     else:
-        return -1
+        raise ValueError("Number of points is not <=3")

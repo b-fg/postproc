@@ -1,28 +1,34 @@
 # -*- coding: utf-8 -*-
 """
 @author: B. Font Garcia
-@description: CL CD St calculations
+@description: Module containing functions to calculate derivatives, averages, decompositions, vorticity.
 @contact: b.fontgarcia@soton.ac.uk
 """
 # Imports
 import numpy as np
 
-# Internal functions
-def avg(u):
+# Module functions
+def avg_z(u):
     """
-    Return the spanwise spatial average of a three-dimensional field.
+    Return the span-wise spatial average of a three-dimensional field.
     """
-    return np.trapz(u, axis=2)/u.shape[2]
+    if not len(u.shape)==3:
+        raise ValueError("Fields must be three-dimensional")
+    else:
+        return np.trapz(u, axis=2)/u.shape[2]
 
 
-def decomp(u):
+def decomp_z(u):
     """
     Return the average and the fluctuating parts of a three-dimensional field spatially averaged
-    in the spanwise direction.
+    in the span-wise direction.
     """
-    u_avg = avg(u)
-    u_f = u-u_avg[:, :, None]
-    return u_avg, u_f
+    if not len(u.shape)==3:
+        raise ValueError("Fields must be three-dimensional")
+    else:
+        u_avg = avg_z(u)
+        u_f = u-u_avg[:, :, None]
+        return u_avg, u_f
 
 
 def ddx(u):
@@ -39,12 +45,19 @@ def ddy(u):
     return np.gradient(u, axis=1, edge_order=2)
 
 
-def ddz(u, periodic):
+def ddz(u, **kwargs):
     """
     Return the first-order derivative in the k direction of (n>=3 dimensional) field.
-    The periodic argument is used to determine if the field is spanwise periodic o not.
+    kwargs:
+        - periodic: Used to determine if the field is span-wise periodic o not.
     """
+    if not 'periodic' in kwargs:
+        periodic = False
+    else:
+        periodic = kwargs['periodic']
+
     N, M, L = u.shape[0], u.shape[1], u.shape[2]
+
     if periodic:
         u_temp = np.zeros((N, M, L+3))
         u_temp[:, :, 1:L+2], u_temp[:, :, 0], u_temp[:, :, L+2] = u, u[:, :, L-1], u[:, :, 1]
@@ -58,18 +71,25 @@ def ddz(u, periodic):
 
 def vortz(u, v):
     """
-    Return the z-vorticity of a two-dimensional velocity fild
+    Return the z-vorticity of a two-dimensional velocity vector field
     """
     if not (len(u.shape)==2 and len(v.shape)==2):
         raise ValueError("Fields must be two-dimensional")
     else:
         return ddx(v)-ddy(u)
 
-def vort(u, v, w, periodic):
+def vort(u, v, w, **kwargs):
     """
-    Return the vorticity of a three-dimensional velocity fild
+    Return the vorticity of a three-dimensional velocity vector field
+    kwargs:
+        - periodic: Used to determine if the field is span-wise periodic o not.
     """
+    if not 'periodic' in kwargs:
+        periodic = False
+    else:
+        periodic = kwargs['periodic']
+
     if not (len(u.shape)==3 and len(v.shape)==3 and len(w.shape)==3):
         raise ValueError("Fields must be three-dimensional")
     else:
-        return ddy(w)-ddz(v, periodic), ddz(u, periodic)-ddx(w), ddx(v)-ddy(u)
+        return ddy(w)-ddz(v, periodic=periodic), ddz(u, periodic=periodic)-ddx(w), ddx(v)-ddy(u)

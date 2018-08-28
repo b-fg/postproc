@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 @author: B. Font Garcia
-@description: CL CD St calculations
+@description: Module with function to plot 2D colormaps and CL-t graphs.
 @contact: b.fontgarcia@soton.ac.uk
 """
 # Imports
@@ -17,6 +17,10 @@ def plot2D(u, cmap, lvls, lim, file, **kwargs):
         lim:  min and max values of the contour passed as array. Eg: lim = [-0.5, 0.5]
         file: Name of the file to save the plot (recommended .pdf so it can be converted get .svg).
               Eg: file = "dUdy.pdf"
+    Kwargs:
+        x=[xmin,xmax] is the x axis minimum and maximum specified
+        y=[ymin,ymax] is the y axis minimum and maximum specified
+        annotate: Boolean if annotations for min and max values of the field (and locations) are desired
     """
     # Internal imports
     import matplotlib as mpl
@@ -30,21 +34,26 @@ def plot2D(u, cmap, lvls, lim, file, **kwargs):
     import matplotlib.colors as colors
     from mpl_toolkits.axes_grid1 import make_axes_locatable
 
-    # Get grid paramters
     N, M = u.shape[0], u.shape[1]
-    for key, value in kwargs.items():
-        if key=='x':
-            xmin, xmax = value[0], value[1]
-        if key=='y':
-            ymin, ymax = value[0], value[1]
+
+    # Get kwargs
+    # for key, value in kwargs.items():
+    #     if key=='x':
+    #         xmin, xmax = value[0], value[1]
+    #     if key=='y':
+    #         ymin, ymax = value[0], value[1]
     if not 'x' in kwargs:
         xmin, xmax = 0, N-1
+    else:
+        xmin, xmax = kwargs['x'][0], kwargs['x'][1]
     if not 'y' in kwargs:
         ymin, ymax = -M/2, M/2-1
-
-    # Find max,min and locs before transposing
-    str_annotation = max_min_loc(u, xmin, xmax, ymin, ymax)
-    print(str_annotation)
+    else:
+        ymin, ymax = kwargs['y'][0], kwargs['y'][1]
+    if not 'annotate' in kwargs:
+        annotate = False
+    else:
+        annotate = kwargs['annotate']
 
     # Uniform grid generation
     x, y = np.linspace(xmin, xmax, N), np.linspace(ymin, ymax, M)
@@ -72,13 +81,15 @@ def plot2D(u, cmap, lvls, lim, file, **kwargs):
     cbax = plt.colorbar(cf, cax=cax).ax
     mpl.colorbar.ColorbarBase(cbax, norm=norm, cmap=cmap)
 
-    # Add annotation
-    ann_ax = fig1.add_subplot(133)
-    ann_ax.axis('off')
-
-    ann_ax.annotate(str_annotation, (0, 0),
-                    xycoords="axes fraction", va="center", ha="center",
-                    bbox=dict(boxstyle="round, pad=1", fc="w"))
+    # Add annotation if desired
+    if annotate:
+        str_annotation = max_min_loc(u, xmin, ymin)
+        print(str_annotation)
+        ann_ax = fig1.add_subplot(133)
+        ann_ax.axis('off')
+        ann_ax.annotate(str_annotation, (0, 0),
+                        xycoords="axes fraction", va="center", ha="center",
+                        bbox=dict(boxstyle="round, pad=1", fc="w"))
 
     # Show, save and close figure
     plt.savefig(file, transparent=True, bbox_inches='tight')
@@ -87,7 +98,7 @@ def plot2D(u, cmap, lvls, lim, file, **kwargs):
     # plt.clf()
     return
 
-def max_min_loc(a, xmin, xmax, ymin, ymax):
+def max_min_loc(a, xmin, ymin):
     a_max = np.amax(a)
     a_min = np.amin(a)
     i_max_loc, j_max_loc = np.unravel_index(a.argmax(), a.shape)
