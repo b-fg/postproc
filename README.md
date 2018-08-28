@@ -19,8 +19,10 @@ This repository contains the ``postproc`` package provided with the following to
 To install this package in your workstation just make sure tot have ``git`` and ``pip3`` installed and then run
 
 $  ``git clone https://github.com/b-fg/postproc.git``
+
 $  ``cd postproc``
- $ ``sudo pip3 install . -r requirements.txt``
+
+$ ``sudo pip3 install . -r requirements.txt``
 
 This will install the `postproc` package at you `python3`  libraries folder (probably `/usr/lib/python3/dist-packages`) with the declared required packages in ``requirements.txt``. This way the package will be available from any path.  
 If you wish to make modifications and make them ready straight-away use also ``-e`` on the  ``pip3`` install command. This provides the source path of the package to the installed library so any modification is immediately available with no need to re-install.
