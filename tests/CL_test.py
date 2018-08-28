@@ -12,7 +12,7 @@ import postproc.plotter as plotter
 
 D = 90 # Diameter (Characteristic length)
 U = 1  # Characteristic velocity
-file = 'sample_data/CL_3D_zPI.9'
+file = 'sample_data/CL_3D_zPI.txt'
 
 t, fx, fy = io.unpack3Dforces(D, file)
 # t=t[t/D>=200]
