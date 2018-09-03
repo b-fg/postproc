@@ -7,15 +7,25 @@
 # Imports
 import numpy as np
 
-# Module functions
-def avg_z(u):
+# Functions
+def avg_z(u, **kwargs):
     """
     Return the span-wise spatial average of a three-dimensional field.
+    If field is written periodic use trapz()/(n-1) or mean().
+    If is not periodic then only mean() can be used or make it periodic and use trapz()/(n-1)
     """
+    if not 'periodic' in kwargs:
+        periodic = False
+    else:
+        periodic = kwargs['periodic']
+
     if not len(u.shape)==3:
         raise ValueError("Fields must be three-dimensional")
     else:
-        return np.trapz(u, axis=2)/u.shape[2]
+        if periodic:
+            return np.trapz(u, axis=2)/(u.shape[2]-1)
+        else:
+            return u.mean(axis=2)
 
 
 def decomp_z(u):

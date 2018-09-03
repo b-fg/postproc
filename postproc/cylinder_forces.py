@@ -7,7 +7,7 @@
 # Imports
 import numpy as np
 
-# Internal functions
+# Functions
 def find_St(t, fy, D, U):
     from scipy.interpolate import interp1d
     # Re-sample fy on a evenly spaced time series (constant dt)

@@ -8,7 +8,7 @@
 # Imports
 import numpy as np
 
-# Internal functions
+# Functions
 def read_data(file, shape, **kwargs):
     """
     Return the velocity components of a velocity vector field stored in binary format.
@@ -118,13 +118,13 @@ def unpack3Dforces(D, file):
 
 def unpackTimeSeries(npoints, file):
     if npoints == 1:
-        p = np.loadtxt(file, unpack=True)  # 3D
-        return p
+        t, p = np.loadtxt(file, unpack=True)  # 3D
+        return t, p
     elif npoints == 2:
-            p1, p2 = np.loadtxt(file, unpack=True)  # 3D
-            return p1, p2
+            t, p1, p2 = np.loadtxt(file, unpack=True)  # 3D
+            return t, p1, p2
     elif npoints == 3:
-            p1, p2, p3 = np.loadtxt(file, unpack=True)  # 3D
-            return p1, p2, p3
+            t, p1, p2, p3 = np.loadtxt(file, unpack=True)  # 3D
+            return t, p1, p2, p3
     else:
         raise ValueError("Number of points is not <=3")

@@ -7,7 +7,7 @@
 
 # Imports
 import postproc.io as io
-import postproc.averages as averages
+import postproc.calc as averages
 import postproc.plotter as plotter
 
 # Constants
