@@ -55,4 +55,4 @@ def invariants(b):
     eta = np.sqrt(-1 / 3 * II)
     xi = np.cbrt(1 / 2 * III)
 
-    return xi, eta
+    return eta, xi

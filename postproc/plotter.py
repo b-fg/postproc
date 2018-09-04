@@ -195,6 +195,53 @@ def plotTKEspatial(tke, file, **kwargs):
     plt.savefig(file, transparent=True, bbox_inches='tight')
     return
 
+def plotXYSpatial(y, label, file, **kwargs):
+    """
+    Generate a plot of the TKE in space
+    """
+    # Basic definitions
+    plt.switch_backend('PDF')
+    plt.rcParams['text.usetex'] = True  # Set TeX interpreter
+    ax = plt.gca()
+    fig  = plt.gcf()
+
+    N = y.shape[0]
+    if not 'x' in kwargs:
+        xmin, xmax = 0, N-1
+    else:
+        xmin, xmax = kwargs['x'][0], kwargs['x'][1]
+    if not 'ylog' in kwargs:
+        ylog = False
+    else:
+        ylog = kwargs['ylog']
+
+    x = np.linspace(xmin, xmax, N)
+    if 'xD_min' in kwargs:
+        x = x[x > kwargs['xD_min']]
+        y = y[-x.size:]
+
+    # Show lines
+    plt.plot(x, y, color='black', lw=0.5, label='$L_z = 1D$')
+
+    # Edit figure, axis, limits
+    ax.set_xlim(min(x), max(x))
+    if ylog:
+        ax.set_yscale('log')
+
+    fig, ax = makeSquare(fig,ax)
+
+    # Edit frame, labels and legend
+    y_label = '$'+label+'$'
+    plt.xlabel('$x/D$')
+    plt.ylabel(y_label)
+    leg = plt.legend(loc='upper right')
+    leg.get_frame().set_edgecolor('white')
+
+    # Show plot and save figure
+    plt.show()
+    plt.savefig(file, transparent=True, bbox_inches='tight')
+    return
+
 def plotLogLogTimeSpectra(freqs, uk, file):
     """
     Generate a loglog plot of a time spectra series using the matplotlib library given the arguments
@@ -279,11 +326,10 @@ def plotLumleysTriangle(eta, xi, file, **kwargs):
     y = np.sqrt(1/27+2*x**3)
 
     # Show lines
-    plt.plot(x, y, color='black', lw=1.5, label='$2C$')
-    plt.plot([-1/6,0], [1/6,0], color='black', lw=1.5, label='$1C$')
-    plt.plot([0,1/3], [0,1/3], color='black', lw=1.5, label='$1C$')
-    plt.scatter(xi,eta, marker='o', c='green', s=1, linewidths=0.1)
-    plt.scatter(xi,eta, marker='d', c='blue', s=1, linewidths=0.1)
+    plt.plot(x, y, color='black', lw=1.5)
+    plt.plot([-1/6,0], [1/6,0], color='black', lw=1.5)
+    plt.plot([0,1/3], [0,1/3], color='black', lw=1.5)
+    plt.scatter(xi, eta, marker='o', c='green', s=1, linewidths=0.1)
 
     # Set limits
     ax.set_ylim(0, 0.35)
