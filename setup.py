@@ -8,7 +8,7 @@ with open('LICENSE.txt') as f:
 
 setup(
     name='postproc',
-    version='0.0.1',
+    version='0.1.0',
     description='My PhD post-processing tools',
     long_description=readme,
     author='Bernat Font Garcia',
@@ -16,5 +16,7 @@ setup(
     keywords=['post-processing, cfd, fortran'],
     url='https://github.com/b-fg/postproc',
     license=license,
-    packages=find_packages(exclude=('tests', 'docs'))
+    packages=find_packages(exclude=('tests', 'docs')),
+		setup_requires=['numpy'],
+		install_requires=['numpy','scipy','matplotlib']
 )
