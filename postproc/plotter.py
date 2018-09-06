@@ -149,6 +149,70 @@ def plotCL(fy,t,file,**kwargs):
     plt.savefig(file, transparent=True, bbox_inches='tight')
     return
 
+def plotTKEspatial_list(file, tke_tuple_list, **kwargs):
+    """
+    Generate a plot of a TKE list of tuple like ('case', tke) in space
+    """
+    # Basic definitions
+    plt.switch_backend('PDF')
+    plt.rcParams['text.usetex'] = True  # Set TeX interpreter
+    ax = plt.gca()
+    fig  = plt.gcf()
+    if not tke_tuple_list:
+        raise ValueError("No TKE series passed to the function.")
+    else:
+        N = tke_tuple_list[0][1].shape[0]
+
+    if not 'ylabel' in kwargs:
+        ylabel = '$K$'
+    else:
+        ylabel = '$' + kwargs['ylabel'] + '$'
+
+    if not 'x' in kwargs:
+        xmin, xmax = 0, N-1
+    else:
+        xmin, xmax = kwargs['x'][0], kwargs['x'][1]
+    if not 'ylog' in kwargs:
+        ylog = False
+    else:
+        ylog = kwargs['ylog']
+
+    x = np.linspace(xmin, xmax, N)
+
+    # Show lines
+    tke_list = []
+    colors = ['black', 'blue', 'green', 'grey', 'orange', 'red']
+    i = 0
+    for tke_tuple in tke_tuple_list:
+        label = tke_tuple[0]
+        tke = tke_tuple[1]
+        label = '$'+label+'$'
+        color = colors[i]
+        plt.plot(x, tke, color=color, lw=1.5, label=label)
+        tke_list.append(tke)
+        i += 1
+
+    # Set limits
+    ax.set_xlim(min(x), max(x))
+    ax.set_ylim(np.min(tke_list), np.max(tke_list)*1.1)
+
+    fig, ax = makeSquare(fig,ax)
+
+    if ylog:
+        ax.set_yscale('log')
+        ax.set_ylim(np.min(tke_list), np.max(tke_list)*2)
+
+    # Edit frame, labels and legend
+    plt.xlabel('$x/D$')
+    plt.ylabel(ylabel)
+    leg = plt.legend(loc='lower right')
+    leg.get_frame().set_edgecolor('white')
+
+    # Show plot and save figure
+    plt.show()
+    plt.savefig(file, transparent=True, bbox_inches='tight')
+    return
+
 def plotTKEspatial(tke, file, **kwargs):
     """
     Generate a plot of the TKE in space
