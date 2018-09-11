@@ -10,6 +10,9 @@ import matplotlib as mpl
 # ! Uncomment for running plyplot without window display
 import matplotlib.pyplot as plt
 
+colors = ['red', 'blue', 'green', 'cyan', 'orange', 'magenta']
+markers = ['o', 'x', 'v', '^', 's', '*']
+
 # Functions
 def plot2D(u, cmap, lvls, lim, file, **kwargs):
     """
@@ -181,11 +184,14 @@ def plotTKEspatial_list(file, tke_tuple_list, **kwargs):
 
     # Show lines
     tke_list = []
-    colors = ['black', 'blue', 'green', 'grey', 'orange', 'red']
     i = 0
     for tke_tuple in tke_tuple_list:
         label = tke_tuple[0]
+        if 'piD' in label: label = '\pi D'
         tke = tke_tuple[1]
+        if 'xD_min' in kwargs:
+            x = x[x > kwargs['xD_min']]
+            tke = tke[-x.size:]
         label = '$'+label+'$'
         color = colors[i]
         plt.plot(x, tke, color=color, lw=1.5, label=label)
@@ -212,6 +218,72 @@ def plotTKEspatial_list(file, tke_tuple_list, **kwargs):
     plt.show()
     plt.savefig(file, transparent=True, bbox_inches='tight')
     return
+
+def plotXYSpatial_list(file, y_tuple_list, **kwargs):
+    """
+    Generate a XY plot
+    """
+    # Basic definitions
+    plt.switch_backend('PDF')
+    plt.rcParams['text.usetex'] = True  # Set TeX interpreter
+    ax = plt.gca()
+    fig  = plt.gcf()
+
+    if not y_tuple_list:
+        raise ValueError("No TKE series passed to the function.")
+    else:
+        N = y_tuple_list[0][1].shape[0]
+    if not 'x' in kwargs:
+        xmin, xmax = 0, N-1
+    else:
+        xmin, xmax = kwargs['x'][0], kwargs['x'][1]
+    if not 'ylog' in kwargs:
+        ylog = False
+    else:
+        ylog = kwargs['ylog']
+    if not 'ylabel' in kwargs:
+        ylabel = '$K$'
+    else:
+        ylabel = '$' + kwargs['ylabel'] + '$'
+
+    x = np.linspace(xmin, xmax, N)
+
+    # Show lines
+    y_list = []
+    i = 0
+    for y_tuple in y_tuple_list:
+        label = y_tuple[0]
+        if 'piD' in label: label = '\pi D'
+        y = y_tuple[1]
+        label = '$'+label+'$'
+        color = colors[i]
+
+        if 'xD_min' in kwargs:
+            x = x[x > kwargs['xD_min']]
+            y = y[-x.size:]
+
+        plt.plot(x, y, color=color, lw=1.5, label=label)
+        y_list.append(y)
+        i += 1
+
+    # Edit figure, axis, limits
+    ax.set_xlim(min(x), max(x))
+    if ylog:
+        ax.set_yscale('log')
+
+    # fig, ax = makeSquare(fig,ax)
+
+    # Edit frame, labels and legend
+    plt.xlabel('$x/D$')
+    plt.ylabel(ylabel)
+    leg = plt.legend(loc='upper right')
+    leg.get_frame().set_edgecolor('white')
+
+    # Show plot and save figure
+    plt.show()
+    plt.savefig(file, transparent=True, bbox_inches='tight')
+    return
+
 
 def plotTKEspatial(tke, file, **kwargs):
     """
@@ -344,6 +416,57 @@ def plotLogLogTimeSpectra(freqs, uk, file):
     plt.savefig(file, transparent=True, bbox_inches='tight')
     return
 
+
+def plotLogLogTimeSpectra_list(file, uk_tuple_list, freqs_list):
+    """
+    Generate a loglog plot of a time spectra series using the matplotlib library given the arguments
+    """
+    # Basic definitions
+    plt.switch_backend('PDF')
+    plt.rcParams['text.usetex'] = True  # Set TeX interpreter
+    ax = plt.gca()
+    fig  = plt.gcf()
+
+    # Show lines
+    uk_list = []
+    i = 0
+    for uk_tuple in uk_tuple_list:
+        label = uk_tuple[0]
+        if 'piD' in label: label = '\pi D'
+        uk = uk_tuple[1]
+        label = '$'+label+'$'
+        color = colors[i]
+        plt.loglog(freqs_list[i], uk, color=color, lw=1, label=label)
+        uk_list.append(uk)
+        i += 1
+
+    x, y = loglogLine(p2=(1,1e-4), p1x=1e-3, m=-5/3)
+    plt.loglog(x, y, color='black', lw=1, ls='dotted')
+    x, y = loglogLine(p2=(1, 1e-6), p1x=1e-3, m=-3)
+    plt.loglog(x, y, color='black', lw=1, ls='dashdot')
+
+    # Set limits
+    ax.set_xlim(1e-4, 1)
+    ax.set_ylim(1e-7, 1)
+
+    fig, ax = makeSquare(fig,ax)
+
+    # Edit frame, labels and legend
+    plt.xlabel(r'$f$')
+    plt.ylabel(r'$F(v)$')
+    leg = plt.legend(loc='upper right')
+    leg.get_frame().set_edgecolor('white')
+
+    # Anotations
+    plt.text(x=5e-3, y=2e-1, s='$-5/3$', color='black')
+    plt.text(x=1e-2, y=1, s='$-3$', color='black')
+
+    # Show plot and save figure
+    plt.show()
+    plt.savefig(file, transparent=True, bbox_inches='tight')
+    return
+
+
 def loglogLine(p2, p1x, m):
     b = np.log10(p2[1])-m*np.log10(p2[0])
     p1y = p1x**m*10**b
@@ -394,6 +517,52 @@ def plotLumleysTriangle(eta, xi, file, **kwargs):
     plt.plot([-1/6,0], [1/6,0], color='black', lw=1.5)
     plt.plot([0,1/3], [0,1/3], color='black', lw=1.5)
     plt.scatter(xi, eta, marker='o', c='green', s=1, linewidths=0.1)
+
+    # Set limits
+    ax.set_ylim(0, 0.35)
+    ax.set_xlim(-0.2, 0.4)
+    # Make figure squared
+    fig, ax = makeSquare(fig,ax)
+
+    # Edit frame, labels and legend
+    plt.xlabel('$\eta$')
+    plt.ylabel('$ \eta $')
+    leg = plt.legend(loc='upper left')
+    leg.get_frame().set_edgecolor('white')
+
+    # Show plot and save figure
+    plt.show()
+    plt.savefig(file, transparent=True, bbox_inches='tight')
+    return
+
+def plotLumleysTriangle_list(file, eta_tuple_list, xi_tuple_list, **kwargs):
+    """
+    Generate a plot of the Reynolds stresses anisotropy tensor in space
+    """
+    # Basic definitions
+    plt.switch_backend('PDF')
+    plt.rcParams['text.usetex'] = True  # Set TeX interpreter
+    ax = plt.gca()
+    fig  = plt.gcf()
+
+    x = np.linspace(-1/6, 1/3, 500)
+    y = np.sqrt(1/27+2*x**3)
+
+    # Show lines
+    plt.plot(x, y, color='black', lw=1.5)
+    plt.plot([-1/6,0], [1/6,0], color='black', lw=1.5)
+    plt.plot([0,1/3], [0,1/3], color='black', lw=1.5)
+
+    # Show lines
+    i = 0
+    for eta in eta_tuple_list:
+        label = eta[0]
+        if 'piD' in label: label = '\pi D'
+        eta = eta[1]
+        xi = xi_tuple_list[i][1]
+        label = '$'+label+'$'
+        plt.scatter(xi, eta, marker=markers[i], c=colors[i], s=6, linewidths=0.1, label=label)
+        i += 1
 
     # Set limits
     ax.set_ylim(0, 0.35)
