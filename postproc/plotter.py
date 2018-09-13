@@ -14,6 +14,8 @@ colors = ['red', 'blue', 'green', 'cyan', 'orange', 'magenta']
 markers = ['o', 'x', 'v', '^', 's', '*']
 
 # Functions
+
+# ------------------------------------------------------ COUNTOURS
 def plot2D(u, cmap, lvls, lim, file, **kwargs):
     """
     Return nothing and saves the figure in the specified file name.
@@ -45,10 +47,7 @@ def plot2D(u, cmap, lvls, lim, file, **kwargs):
         ymin, ymax = -M/2, M/2-1
     else:
         ymin, ymax = kwargs['y'][0], kwargs['y'][1]
-    if not 'annotate' in kwargs:
-        annotate = False
-    else:
-        annotate = kwargs['annotate']
+    annotate = kwargs.get('annotate', False)
 
     # Uniform grid generation
     x, y = np.linspace(xmin, xmax, N), np.linspace(ymin, ymax, M)
@@ -93,20 +92,9 @@ def plot2D(u, cmap, lvls, lim, file, **kwargs):
     # plt.clf()
     return
 
-def max_min_loc(a, xmin, ymin):
-    a_max = np.amax(a)
-    a_min = np.amin(a)
-    i_max_loc, j_max_loc = np.unravel_index(a.argmax(), a.shape)
-    print(a.argmax(), i_max_loc, j_max_loc)
-    x_max_loc, y_max_loc = i_max_loc + xmin, j_max_loc + ymin
-    i_min_loc, j_min_loc = np.unravel_index(a.argmin(), a.shape)
-    x_min_loc, y_min_loc = i_min_loc + xmin, j_min_loc + ymin
-    my_str = ' max: {:.2e}, max_loc: ({},{}) \n min: {:.2e}, min_loc: ({},{})'\
-        .format(a_max, x_max_loc, y_max_loc, a_min, x_min_loc, y_min_loc)
-    return my_str
 
-
-def plotCL(fy,t,file,**kwargs):
+# ------------------------------------------------------ CL-t
+def plotCL(fy, t, file, **kwargs):
     plt.switch_backend('PDF')
 
     plt.rcParams['text.usetex'] = True  # Set TeX interpreter
@@ -152,6 +140,52 @@ def plotCL(fy,t,file,**kwargs):
     plt.savefig(file, transparent=True, bbox_inches='tight')
     return
 
+
+# ------------------------------------------------------ TKE
+def plotTKEspatial(tke, file, **kwargs):
+    """
+    Generate a plot of the TKE in space
+    """
+    # Basic definitions
+    plt.switch_backend('PDF')
+    plt.rcParams['text.usetex'] = True  # Set TeX interpreter
+    ax = plt.gca()
+    fig  = plt.gcf()
+
+    N = tke.shape[0]
+    if not 'x' in kwargs:
+        xmin, xmax = 0, N-1
+    else:
+        xmin, xmax = kwargs['x'][0], kwargs['x'][1]
+
+    x = np.linspace(xmin, xmax, N)
+    ylog = kwargs.get('ylog', False)
+
+    # Show lines
+    plt.plot(x, tke, color='black', lw=1.5, label='$L_z = 1D$')
+
+    # Set limits
+    ax.set_xlim(min(x), max(x))
+    ax.set_ylim(min(tke), max(tke)*1.1)
+
+    fig, ax = makeSquare(fig,ax)
+
+    if ylog:
+        ax.set_yscale('log')
+        ax.set_ylim(min(tke), max(tke) * 2)
+
+    # Edit frame, labels and legend
+    plt.xlabel('$x/D$')
+    plt.ylabel('$K$')
+    leg = plt.legend(loc='upper right')
+    leg.get_frame().set_edgecolor('white')
+
+    # Show plot and save figure
+    plt.show()
+    plt.savefig(file, transparent=True, bbox_inches='tight')
+    return
+
+
 def plotTKEspatial_list(file, tke_tuple_list, **kwargs):
     """
     Generate a plot of a TKE list of tuple like ('case', tke) in space
@@ -165,21 +199,12 @@ def plotTKEspatial_list(file, tke_tuple_list, **kwargs):
         raise ValueError("No TKE series passed to the function.")
     else:
         N = tke_tuple_list[0][1].shape[0]
-
-    if not 'ylabel' in kwargs:
-        ylabel = '$K$'
-    else:
-        ylabel = '$' + kwargs['ylabel'] + '$'
-
     if not 'x' in kwargs:
         xmin, xmax = 0, N-1
     else:
         xmin, xmax = kwargs['x'][0], kwargs['x'][1]
-    if not 'ylog' in kwargs:
-        ylog = False
-    else:
-        ylog = kwargs['ylog']
-
+    ylog = kwargs.get('ylog', False)
+    ylabel = '$' + kwargs.get('ylabel','K') + '$'
     x = np.linspace(xmin, xmax, N)
 
     # Show lines
@@ -219,6 +244,54 @@ def plotTKEspatial_list(file, tke_tuple_list, **kwargs):
     plt.savefig(file, transparent=True, bbox_inches='tight')
     return
 
+
+# ------------------------------------------------------ x-y
+def plotXYSpatial(y, label, file, **kwargs):
+    """
+    Generate a plot of the TKE in space
+    """
+    # Basic definitions
+    plt.switch_backend('PDF')
+    plt.rcParams['text.usetex'] = True  # Set TeX interpreter
+    ax = plt.gca()
+    fig  = plt.gcf()
+
+    N = y.shape[0]
+    if not 'x' in kwargs:
+        xmin, xmax = 0, N-1
+    else:
+        xmin, xmax = kwargs['x'][0], kwargs['x'][1]
+
+    x = np.linspace(xmin, xmax, N)
+    if 'xD_min' in kwargs:
+        x = x[x > kwargs['xD_min']]
+        y = y[-x.size:]
+
+    ylog = kwargs.get('ylog', False)
+
+    # Show lines
+    plt.plot(x, y, color='black', lw=0.5, label='$L_z = 1D$')
+
+    # Edit figure, axis, limits
+    ax.set_xlim(min(x), max(x))
+    if ylog:
+        ax.set_yscale('log')
+
+    fig, ax = makeSquare(fig,ax)
+
+    # Edit frame, labels and legend
+    y_label = '$'+label+'$'
+    plt.xlabel('$x/D$')
+    plt.ylabel(y_label)
+    leg = plt.legend(loc='upper right')
+    leg.get_frame().set_edgecolor('white')
+
+    # Show plot and save figure
+    plt.show()
+    plt.savefig(file, transparent=True, bbox_inches='tight')
+    return
+
+
 def plotXYSpatial_list(file, y_tuple_list, **kwargs):
     """
     Generate a XY plot
@@ -237,15 +310,8 @@ def plotXYSpatial_list(file, y_tuple_list, **kwargs):
         xmin, xmax = 0, N-1
     else:
         xmin, xmax = kwargs['x'][0], kwargs['x'][1]
-    if not 'ylog' in kwargs:
-        ylog = False
-    else:
-        ylog = kwargs['ylog']
-    if not 'ylabel' in kwargs:
-        ylabel = '$K$'
-    else:
-        ylabel = '$' + kwargs['ylabel'] + '$'
-
+    ylog = kwargs.get('ylog', False)
+    ylabel = '$' + kwargs.get('ylabel','K') + '$'
     x = np.linspace(xmin, xmax, N)
 
     # Show lines
@@ -285,9 +351,10 @@ def plotXYSpatial_list(file, y_tuple_list, **kwargs):
     return
 
 
-def plotTKEspatial(tke, file, **kwargs):
+# ------------------------------------------------------ LogLog Spatial
+def plotLogLogSpatialSpectra(freqs, uk, file):
     """
-    Generate a plot of the TKE in space
+    Generate a loglog plot of a time spectra series using the matplotlib library given the arguments
     """
     # Basic definitions
     plt.switch_backend('PDF')
@@ -295,89 +362,36 @@ def plotTKEspatial(tke, file, **kwargs):
     ax = plt.gca()
     fig  = plt.gcf()
 
-    N = tke.shape[0]
-    if not 'x' in kwargs:
-        xmin, xmax = 0, N-1
-    else:
-        xmin, xmax = kwargs['x'][0], kwargs['x'][1]
-    if not 'ylog' in kwargs:
-        ylog = False
-    else:
-        ylog = kwargs['ylog']
-
-    x = np.linspace(xmin, xmax, N)
-
     # Show lines
-    plt.plot(x, tke, color='black', lw=1.5, label='$L_z = 1D$')
+    plt.loglog(freqs, uk, color='black', lw=1.5, label='$L_z = piD$')
+    x, y = loglogLine(p2=(max(freqs), 5e-4), p1x=min(freqs)*10, m=-5/3)
+    plt.loglog(x, y, color='black', lw=1, ls='dotted')
+    x, y = loglogLine(p2=(max(freqs), 4e-4), p1x=min(freqs)*10, m=-3)
+    plt.loglog(x, y, color='black', lw=1, ls='dashdot')
 
     # Set limits
-    ax.set_xlim(min(x), max(x))
-    ax.set_ylim(min(tke), max(tke)*1.1)
+    # ax.set_xlim(min(freqs)*10, max(freqs))
+    # ax.set_ylim(1e-5, 1e-1)
 
     fig, ax = makeSquare(fig,ax)
 
-    if ylog:
-        ax.set_yscale('log')
-        ax.set_ylim(min(tke), max(tke) * 2)
-
     # Edit frame, labels and legend
-    plt.xlabel('$x/D$')
-    plt.ylabel('$K$')
+    plt.xlabel('$kD$')
+    plt.ylabel('$tke$')
     leg = plt.legend(loc='upper right')
     leg.get_frame().set_edgecolor('white')
+
+    # Anotations
+    # plt.text(x=5e-3, y=2e-1, s='$-5/3$', color='black')
+    # plt.text(x=1e-2, y=1, s='$-3$', color='black')
 
     # Show plot and save figure
     plt.show()
     plt.savefig(file, transparent=True, bbox_inches='tight')
     return
 
-def plotXYSpatial(y, label, file, **kwargs):
-    """
-    Generate a plot of the TKE in space
-    """
-    # Basic definitions
-    plt.switch_backend('PDF')
-    plt.rcParams['text.usetex'] = True  # Set TeX interpreter
-    ax = plt.gca()
-    fig  = plt.gcf()
 
-    N = y.shape[0]
-    if not 'x' in kwargs:
-        xmin, xmax = 0, N-1
-    else:
-        xmin, xmax = kwargs['x'][0], kwargs['x'][1]
-    if not 'ylog' in kwargs:
-        ylog = False
-    else:
-        ylog = kwargs['ylog']
-
-    x = np.linspace(xmin, xmax, N)
-    if 'xD_min' in kwargs:
-        x = x[x > kwargs['xD_min']]
-        y = y[-x.size:]
-
-    # Show lines
-    plt.plot(x, y, color='black', lw=0.5, label='$L_z = 1D$')
-
-    # Edit figure, axis, limits
-    ax.set_xlim(min(x), max(x))
-    if ylog:
-        ax.set_yscale('log')
-
-    fig, ax = makeSquare(fig,ax)
-
-    # Edit frame, labels and legend
-    y_label = '$'+label+'$'
-    plt.xlabel('$x/D$')
-    plt.ylabel(y_label)
-    leg = plt.legend(loc='upper right')
-    leg.get_frame().set_edgecolor('white')
-
-    # Show plot and save figure
-    plt.show()
-    plt.savefig(file, transparent=True, bbox_inches='tight')
-    return
-
+# ------------------------------------------------------ LogLog Time
 def plotLogLogTimeSpectra(freqs, uk, file):
     """
     Generate a loglog plot of a time spectra series using the matplotlib library given the arguments
@@ -467,39 +481,8 @@ def plotLogLogTimeSpectra_list(file, uk_tuple_list, freqs_list):
     return
 
 
-def loglogLine(p2, p1x, m):
-    b = np.log10(p2[1])-m*np.log10(p2[0])
-    p1y = p1x**m*10**b
-    return [p1x, p2[0]], [p1y, p2[1]]
-
-
-def makeSquare(fig, ax):
-    fwidth = fig.get_figwidth()
-    fheight = fig.get_figheight()
-    # get the axis size and position in relative coordinates
-    # this gives a BBox object
-    bb = ax.get_position()
-    # calculate them into real world coordinates
-    axwidth = fwidth*(bb.x1-bb.x0)
-    axheight = fheight*(bb.y1-bb.y0)
-    # if the axis is wider than tall, then it has to be narrowe
-    if axwidth > axheight:
-        # calculate the narrowing relative to the figure
-        narrow_by = (axwidth-axheight)/fwidth
-        # move bounding box edges inwards the same amount to give the correct width
-        bb.x0 += narrow_by/2
-        bb.x1 -= narrow_by/2
-    # else if the axis is taller than wide, make it vertically smaller
-    # works the same as above
-    elif axheight > axwidth:
-        shrink_by = (axheight-axwidth)/fheight
-        bb.y0 += shrink_by/2
-        bb.y1 -= shrink_by/2
-    ax.set_position(bb)
-    return fig, ax
-
-
-def plotLumleysTriangle(eta, xi, file, **kwargs):
+# ------------------------------------------------------ Lumley's Triangle
+def plotLumleysTriangle(eta, xi, file):
     """
     Generate a plot of the Reynolds stresses anisotropy tensor in space
     """
@@ -535,7 +518,7 @@ def plotLumleysTriangle(eta, xi, file, **kwargs):
     plt.savefig(file, transparent=True, bbox_inches='tight')
     return
 
-def plotLumleysTriangle_list(file, eta_tuple_list, xi_tuple_list, **kwargs):
+def plotLumleysTriangle_list(file, eta_tuple_list, xi_tuple_list):
     """
     Generate a plot of the Reynolds stresses anisotropy tensor in space
     """
@@ -580,3 +563,49 @@ def plotLumleysTriangle_list(file, eta_tuple_list, xi_tuple_list, **kwargs):
     plt.show()
     plt.savefig(file, transparent=True, bbox_inches='tight')
     return
+
+
+# ------------------------------------------------------ Utils
+def loglogLine(p2, p1x, m):
+    b = np.log10(p2[1])-m*np.log10(p2[0])
+    p1y = p1x**m*10**b
+    return [p1x, p2[0]], [p1y, p2[1]]
+
+
+def makeSquare(fig, ax):
+    fwidth = fig.get_figwidth()
+    fheight = fig.get_figheight()
+    # get the axis size and position in relative coordinates
+    # this gives a BBox object
+    bb = ax.get_position()
+    # calculate them into real world coordinates
+    axwidth = fwidth*(bb.x1-bb.x0)
+    axheight = fheight*(bb.y1-bb.y0)
+    # if the axis is wider than tall, then it has to be narrowe
+    if axwidth > axheight:
+        # calculate the narrowing relative to the figure
+        narrow_by = (axwidth-axheight)/fwidth
+        # move bounding box edges inwards the same amount to give the correct width
+        bb.x0 += narrow_by/2
+        bb.x1 -= narrow_by/2
+    # else if the axis is taller than wide, make it vertically smaller
+    # works the same as above
+    elif axheight > axwidth:
+        shrink_by = (axheight-axwidth)/fheight
+        bb.y0 += shrink_by/2
+        bb.y1 -= shrink_by/2
+    ax.set_position(bb)
+    return fig, ax
+
+
+def max_min_loc(a, xmin, ymin):
+    a_max = np.amax(a)
+    a_min = np.amin(a)
+    i_max_loc, j_max_loc = np.unravel_index(a.argmax(), a.shape)
+    print(a.argmax(), i_max_loc, j_max_loc)
+    x_max_loc, y_max_loc = i_max_loc + xmin, j_max_loc + ymin
+    i_min_loc, j_min_loc = np.unravel_index(a.argmin(), a.shape)
+    x_min_loc, y_min_loc = i_min_loc + xmin, j_min_loc + ymin
+    my_str = ' max: {:.2e}, max_loc: ({},{}) \n min: {:.2e}, min_loc: ({},{})'\
+        .format(a_max, x_max_loc, y_max_loc, a_min, x_min_loc, y_min_loc)
+    return my_str

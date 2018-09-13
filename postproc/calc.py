@@ -14,11 +14,7 @@ def avg_z(u, **kwargs):
     If field is written periodic use trapz()/(n-1) or mean().
     If is not periodic then only mean() can be used or make it periodic and use trapz()/(n-1)
     """
-    if not 'periodic' in kwargs:
-        periodic = False
-    else:
-        periodic = kwargs['periodic']
-
+    periodic = kwargs.get('periodic', False)
     if not len(u.shape)==3:
         raise ValueError("Fields must be three-dimensional")
     else:
@@ -61,11 +57,7 @@ def ddz(u, **kwargs):
     kwargs:
         - periodic: Used to determine if the field is span-wise periodic o not.
     """
-    if not 'periodic' in kwargs:
-        periodic = False
-    else:
-        periodic = kwargs['periodic']
-
+    periodic = kwargs.get('periodic', False)
     N, M, L = u.shape[0], u.shape[1], u.shape[2]
 
     if periodic:
@@ -94,10 +86,7 @@ def vort(u, v, w, **kwargs):
     kwargs:
         - periodic: Used to determine if the field is span-wise periodic o not.
     """
-    if not 'periodic' in kwargs:
-        periodic = False
-    else:
-        periodic = kwargs['periodic']
+    periodic = kwargs.get('periodic', False)
 
     if not (len(u.shape)==3 and len(v.shape)==3 and len(w.shape)==3):
         raise ValueError("Fields must be three-dimensional")

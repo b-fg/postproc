@@ -25,18 +25,9 @@ def read_data(file, shape, **kwargs):
         - periodic: If the user desires to make the data spanwise periodic (true) or not (false).
         - ncomponents: Specify the number of components. Default = ndims of the field
     """
-    if not 'dtype' in kwargs:
-        dtype = np.single
-    else:
-        dtype = kwargs['dtype']
-    if not 'periodic' in kwargs:
-        periodic = False
-    else:
-        periodic = kwargs['periodic']
-    if not 'ncomponents' in kwargs:
-        ncomponents = len(shape)
-    else:
-        ncomponents = kwargs['ncomponents']
+    dtype = kwargs.get('periodic', np.single)
+    periodic = kwargs.get('periodic', False)
+    ncomponents = kwargs.get('ncomponents', len(shape))
 
     shape = tuple(reversed(shape))
     shape_comp = shape + (ncomponents,)
