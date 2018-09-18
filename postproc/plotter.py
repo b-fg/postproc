@@ -414,6 +414,7 @@ def plotLogLogTimeSpectra(freqs, uk, file):
     ax.set_ylim(min(uk)*1e-1, max(uk)*1e1)
 
     # fig, ax = makeSquare(fig,ax)
+    ax.xaxis.set_tick_params(labeltop='on')
 
     # Edit frame, labels and legend
     plt.xlabel(r'$f$')
@@ -422,8 +423,9 @@ def plotLogLogTimeSpectra(freqs, uk, file):
     leg.get_frame().set_edgecolor('white')
 
     # Anotations
-    plt.text(x=5e-3, y=2e-1, s='$-5/3$', color='black')
-    plt.text(x=1e-2, y=1, s='$-3$', color='black')
+    plt.text(x=2e-3, y=1e-1, s='$-5/3$', color='black')
+    plt.text(x=7e-3, y=2e-1, s='$-3$', color='black')
+    plt.text(x=1e-2, y=4e-1, s='$-11/3$', color='black')
 
     # Show plot and save figure
     plt.show()
@@ -442,38 +444,37 @@ def plotLogLogTimeSpectra_list(file, uk_tuple_list, freqs_list):
     fig  = plt.gcf()
 
     # Show lines
-    uk_list = []
-    i = 0
-    for uk_tuple in uk_tuple_list:
+    for i, uk_tuple in enumerate(uk_tuple_list):
         label = uk_tuple[0]
         if 'piD' in label: label = '\pi D'
         uk = uk_tuple[1]
         label = '$'+label+'$'
         color = colors[i]
-        plt.loglog(freqs_list[i], uk, color=color, lw=1, label=label)
-        uk_list.append(uk)
-        i += 1
+        plt.loglog(freqs_list[i], uk, color=color, lw=0.2, label=label)
 
-    x, y = loglogLine(p2=(1,1e-4), p1x=1e-3, m=-5/3)
+    x, y = loglogLine(p2=(1,1e-6), p1x=1e-3, m=-5/3)
     plt.loglog(x, y, color='black', lw=1, ls='dotted')
-    x, y = loglogLine(p2=(1, 1e-6), p1x=1e-3, m=-3)
+    x, y = loglogLine(p2=(1, 1e-8), p1x=1e-3, m=-3)
     plt.loglog(x, y, color='black', lw=1, ls='dashdot')
+    x, y = loglogLine(p2=(1, 1e-8), p1x=1e-3, m=-11/3)
+    plt.loglog(x, y, color='black', lw=1, ls='dashed')
 
     # Set limits
-    ax.set_xlim(1e-4, 1)
-    ax.set_ylim(1e-7, 1)
+    ax.set_xlim(1e-3, 1.5)
+    ax.set_ylim(1e-8, 1)
 
     fig, ax = makeSquare(fig,ax)
 
     # Edit frame, labels and legend
     plt.xlabel(r'$f$')
-    plt.ylabel(r'$F(v)$')
+    plt.ylabel(r'$F(u)$')
     leg = plt.legend(loc='upper right')
     leg.get_frame().set_edgecolor('white')
 
     # Anotations
-    plt.text(x=5e-3, y=2e-1, s='$-5/3$', color='black')
-    plt.text(x=1e-2, y=1, s='$-3$', color='black')
+    plt.text(x=1.2e-3, y=1e-1, s='$-5/3$', color='black')
+    plt.text(x=4e-3, y=2e-1, s='$-3$', color='black')
+    plt.text(x=1e-2, y=4e-1, s='$-11/3$', color='black')
 
     # Show plot and save figure
     plt.show()
@@ -556,8 +557,8 @@ def plotLumleysTriangle_list(file, eta_tuple_list, xi_tuple_list):
     # Edit frame, labels and legend
     plt.xlabel('$\eta$')
     plt.ylabel('$ \eta $')
-    leg = plt.legend(loc='upper left')
-    leg.get_frame().set_edgecolor('white')
+    # leg = plt.legend(loc='upper left')
+    # leg.get_frame().set_edgecolor('white')
 
     # Show plot and save figure
     plt.show()

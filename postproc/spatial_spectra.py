@@ -7,6 +7,7 @@
 
 # Imports
 import numpy as np
+import scipy.signal as signal
 
 # Functions
 def spatial_spectra(a, *args, **kwargs):
@@ -15,9 +16,13 @@ def spatial_spectra(a, *args, **kwargs):
         raise ValueError('The field dimensions must much the spatial vector components passed to the function')
 
     k = wavenumbers(*args) # k = (kx, ky, kz)
-    kspace = np.meshgrid(*k) # kspace = (kx_grid, ky_grid, kz_grid)
-    for i, e in enumerate(kspace): kspace[i] = np.transpose(e)
+    kspace = np.meshgrid(*k, indexing='ij') # kspace = (kx_grid, ky_grid, kz_grid)
 
+    #windowing
+    print(a.shape)
+    # a = _nd_window(a)
+
+    #fft
     ak = np.fft.fft2(a)/a.size
     # Pair every ak(k) with its k modulus
     ak_pairs = []
@@ -73,3 +78,34 @@ def wavenumbers(*args):
             k_i[i] = alpha*index[i]
         k = k + (k_i,)
     return k
+
+
+def window(a):
+    # w = signal.blackman(len(u_regular))
+    w = signal.hanning(len(a))
+    return a * w
+
+def _nd_window(data):
+    """
+    Performs an in-place windowing on N-dimensional spatial-domain data.
+    This is done to mitigate boundary effects in the FFT.
+
+    Parameters
+    ----------
+    data : ndarray
+           Input data to be windowed, modified in place.
+    filter_function : 1D window generation function
+           Function should accept one argument: the window length.
+           Example: scipy.signal.hamming
+    """
+    nx = data.shape[0]
+    ny = data.shape[1]
+    ax = (0,1)
+    for axis, axis_size in enumerate(data.shape):
+        # set up shape for numpy broadcasting
+        window = signal.blackman(axis_size)
+        window = np.stack([window]*data.shape[axis-1], axis=ax[axis-1])
+        # np.power(window, (1.0/data.ndim))
+        data *= window
+
+    return data

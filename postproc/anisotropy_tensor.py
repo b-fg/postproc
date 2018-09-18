@@ -23,8 +23,9 @@ def anisotropy_tensor(r):
     k = 0.5 * (r[0,0] + r[1,1] + r[2,2])  # TKE
     k_d_matrix = np.array([[k, zeros, zeros], [zeros, k, zeros], [zeros, zeros, k]])  # TKE*kronecker_delta matrix
     a = r - (2 / 3) * k_d_matrix  # Anisotropy tensor
-    b = a / (2 * k)  # Normalized anisotropy tensor
-
+    # b = 0.5*a/k
+    b = 0.5 * np.divide(a, k, out=np.zeros_like(a), where=k != 0) # Avoid warning
+    # b = 0.5 * np.divide(a, k_d_matrix, out=np.zeros_like(a), where=k_d_matrix != 0) # Produces different result
     return b
 
 
