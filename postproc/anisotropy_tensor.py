@@ -12,8 +12,8 @@ import numpy as np
 def anisotropy_tensor(r):
     """
     Return the normalized anisotropy tensor of the Reynolds stresses (np.ndarray with shape (3,3,N,M)).
-    Args:
-        r: Reynolds stresses. np.ndarray with shape (3,3,N,M) where NxM is the field size of the components (2D field)
+    :param r: Reynolds stresses. np.ndarray with shape (3,3,N,M) where NxM is the field size of the components (2D fields)
+    :return: b, the normalized anisotropy tensor of the Reynolds stresses
     """
     N = r[0,0].shape[0]
     M = r[0,0].shape[1]
@@ -24,18 +24,19 @@ def anisotropy_tensor(r):
     k_d_matrix = np.array([[k, zeros, zeros], [zeros, k, zeros], [zeros, zeros, k]])  # TKE*kronecker_delta matrix
     a = r - (2 / 3) * k_d_matrix  # Anisotropy tensor
     # b = 0.5*a/k
-    b = 0.5 * np.divide(a, k, out=np.zeros_like(a), where=k != 0) # Avoid warning
+    b = 0.5 * np.divide(a, k, out=np.zeros_like(a), where=k != 0) # Avoid warning of divide by 0.
     # b = 0.5 * np.divide(a, k_d_matrix, out=np.zeros_like(a), where=k_d_matrix != 0) # Produces different result
     return b
 
 
 def invariants(b):
     """
-    Return the invariants of the normalized Reynolds stresses anisotropy tensor (np.ndarray with shape (N,M)).
-    Args:
-        b: normalized Reynolds stresses anisotropy tensor. np.ndarray with shape (3,3,N,M) where NxM is the field size
+    :param b: normalized Reynolds stresses anisotropy tensor. np.ndarray with shape (3,3,N,M) where NxM is the field size
             of the components (2D field)
+    :return: the two non-zero invariants of the normalized Reynolds stresses anisotropy tensor (np.ndarray with shape (N,M)).
+        The invariants are in the form of \eta and \xi
     """
+
     # Calc invariants
     # b11 = b[0, 0]
     # b12 = b[0, 1]

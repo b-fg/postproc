@@ -7,12 +7,17 @@
 # Imports
 import numpy as np
 
+
 # Functions
 def avg_z(u, **kwargs):
     """
     Return the span-wise spatial average of a three-dimensional field.
-    If field is written periodic use trapz()/(n-1) or mean().
-    If is not periodic then only mean() can be used or make it periodic and use trapz()/(n-1)
+    If the passed u is spanwise periodic use trapz()/(n-1) or mean().
+    If it is not periodic then only mean() can be used or make it periodic and use trapz()/(n-1).
+    :param u: The field to be spanwise-averaged.
+    :param kwargs:
+        periodic: Boolean to define if the field is spanwise periodic.
+    :return: Return the span-wise spatial average of a three-dimensional field.
     """
     periodic = kwargs.get('periodic', False)
     if not len(u.shape)==3:
@@ -26,7 +31,8 @@ def avg_z(u, **kwargs):
 
 def decomp_z(u):
     """
-    Return the average and the fluctuating parts of a three-dimensional field spatially averaged
+    :param u: field to be decomposed in z direction.
+    :return: the average and the fluctuating parts of a three-dimensional field spatially averaged
     in the span-wise direction.
     """
     if not len(u.shape)==3:
@@ -39,23 +45,26 @@ def decomp_z(u):
 
 def ddx(u):
     """
-    Return the first-order derivative in the i direction of (n>=1 dimensional) field.
+    :param u: n-dimensional field.
+    :return: the first-order derivative in the i direction of (n>=1 dimensional) field.
     """
     return np.gradient(u, axis=0, edge_order=2)
 
 
 def ddy(u):
     """
-    Return the first-order derivative in the j direction of (n>=2 dimensional) field.
+    :param u: n-dimensional field.
+    :return: the first-order derivative in the j direction of (n>=2 dimensional) field.
     """
     return np.gradient(u, axis=1, edge_order=2)
 
 
 def ddz(u, **kwargs):
     """
-    Return the first-order derivative in the k direction of (n>=3 dimensional) field.
-    kwargs:
-        - periodic: Used to determine if the field is span-wise periodic o not.
+    :param u: n-dimensional field.
+    :param kwargs:
+        periodic: Used to determine if the field is span-wise periodic o not.
+    :return: the first-order derivative in the k direction of (n>=3 dimensional) field.
     """
     periodic = kwargs.get('periodic', False)
     N, M, L = u.shape[0], u.shape[1], u.shape[2]
@@ -73,7 +82,9 @@ def ddz(u, **kwargs):
 
 def vortz(u, v):
     """
-    Return the z-vorticity of a two-dimensional velocity vector field
+    :param u: x component of the velocity vector field.
+    :param v: y component of the velocity vector field.
+    :return: The z-vorticity of a two-dimensional velocity vector field
     """
     if not (len(u.shape)==2 and len(v.shape)==2):
         raise ValueError("Fields must be two-dimensional")
@@ -82,9 +93,12 @@ def vortz(u, v):
 
 def vort(u, v, w, **kwargs):
     """
-    Return the vorticity of a three-dimensional velocity vector field
-    kwargs:
-        - periodic: Used to determine if the field is span-wise periodic o not.
+    :param u: x component of the velocity vector field.
+    :param v: y component of the velocity vector field.
+    :param w: z component of the velocity vector field.
+    :param kwargs:
+        periodic: Used to determine if the field is span-wise periodic o not.
+    :return: the three components of the vorticity of a three-dimensional velocity vector field.
     """
     periodic = kwargs.get('periodic', False)
 

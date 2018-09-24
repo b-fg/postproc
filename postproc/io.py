@@ -8,64 +8,24 @@
 # Imports
 import numpy as np
 
+
 # Functions
-def read_fractioned_data(f_w_list, shape, **kwargs):
-    ncomponents = kwargs.get('ncomponents', len(shape))
-    if ncomponents == 1:
-        aw_tot = 0
-        w_tot = 0
-        for tup in f_w_list:
-            file = tup[0]
-            w = tup[1]
-            a = read_data(file, shape, **kwargs)
-            aw_tot += a*w
-            w_tot += w
-        return aw_tot/w_tot
-    elif ncomponents == 2:
-        aw_tot = 0
-        bw_tot = 0
-        w_tot = 0
-        for tup in f_w_list:
-            file = tup[0]
-            w = tup[1]
-            a, b = read_data(file, shape, **kwargs)
-            aw_tot += a*w
-            bw_tot += b*w
-            w_tot += w
-        return aw_tot/w_tot, bw_tot/w_tot
-    elif ncomponents == 3:
-        aw_tot = 0
-        bw_tot = 0
-        cw_tot = 0
-        w_tot = 0
-        for tup in f_w_list:
-            file = tup[0]
-            w = tup[1]
-            a, b, c = read_data(file, shape, **kwargs)
-            aw_tot += a * w
-            bw_tot += b * w
-            cw_tot += c * w
-            w_tot += w
-        return aw_tot/w_tot, bw_tot/w_tot, cw_tot/w_tot
-    else:
-         raise ValueError("Number of components is not <=3")
-
-
 def read_data(file, shape, **kwargs):
     """
     Return the velocity components of a velocity vector field stored in binary format.
     The data field is supposed to have been written as: (for k; for j; for i;) where the last dimension
     is the quickest varying index. Each record should have been written as: u, v, w.
     The return velocity components are always converted in np.double precision type.
-    Args:
-        - file: file to read from
-        - shape: Shape of the data as (Nx,Ny) for 2D or (Nx,Ny,Nz) for 3D.
-        - dtype: numpy dtype object. Single or double precision expected.
-        - stream (depracated, use always stream output): type of access of the binary output. If false, there is a 4-byte header
+    :param file: file to read from.
+    :param shape: Shape of the data as (Nx,Ny) for 2D or (Nx,Ny,Nz) for 3D.
+    :param kwargs:
+        dtype: numpy dtype object. Single or double precision expected.
+        stream (depracated, use always stream output): type of access of the binary output. If false, there is a 4-byte header
             and footer around each "record" in the binary file (means +2 components at each record) (can happen in some
             Fortran compilers if access != 'stream').
-        - periodic: If the user desires to make the data spanwise periodic (true) or not (false).
-        - ncomponents: Specify the number of components. Default = ndims of the field
+        periodic: If the user desires to make the data spanwise periodic (true) or not (false).
+        ncomponents: Specify the number of components. Default = ndims of the field
+    :return: the components of the vector or scalar field.
     """
     dtype = kwargs.get('periodic', np.single)
     periodic = kwargs.get('periodic', False)
@@ -139,17 +99,95 @@ def read_data(file, shape, **kwargs):
         raise ValueError("Shape is not two- nor three-dimensional")
 
 
-def unpack2Dforces(D, file):
+def read_fractioned_mean_data(f_w_list, shape, **kwargs):
+    """
+    Computes a weighted average of files which containg partial averages of quantities.
+    :param f_w_list: list of tuples containing (file, weight).
+    :param shape: Shape of the data as (Nx,Ny) for 2D or (Nx,Ny,Nz) for 3D.
+    :param kwargs:
+    :param kwargs:
+        dtype: numpy dtype object. Single or double precision expected.
+        stream (depracated, use always stream output): type of access of the binary output. If false, there is a 4-byte header
+            and footer around each "record" in the binary file (means +2 components at each record) (can happen in some
+            Fortran compilers if access != 'stream').
+        periodic: If the user desires to make the data spanwise periodic (true) or not (false).
+        ncomponents: Specify the number of components. Default = ndims of the field
+    :return: The weighted average of the files containing partial averages.
+    """
+    ncomponents = kwargs.get('ncomponents', len(shape))
+    if ncomponents == 1:
+        aw_tot = 0
+        w_tot = 0
+        for tup in f_w_list:
+            file = tup[0]
+            w = tup[1]
+            a = read_data(file, shape, **kwargs)
+            aw_tot += a*w
+            w_tot += w
+        return aw_tot/w_tot
+    elif ncomponents == 2:
+        aw_tot = 0
+        bw_tot = 0
+        w_tot = 0
+        for tup in f_w_list:
+            file = tup[0]
+            w = tup[1]
+            a, b = read_data(file, shape, **kwargs)
+            aw_tot += a*w
+            bw_tot += b*w
+            w_tot += w
+        return aw_tot/w_tot, bw_tot/w_tot
+    elif ncomponents == 3:
+        aw_tot = 0
+        bw_tot = 0
+        cw_tot = 0
+        w_tot = 0
+        for tup in f_w_list:
+            file = tup[0]
+            w = tup[1]
+            a, b, c = read_data(file, shape, **kwargs)
+            aw_tot += a * w
+            bw_tot += b * w
+            cw_tot += c * w
+            w_tot += w
+        return aw_tot/w_tot, bw_tot/w_tot, cw_tot/w_tot
+    else:
+         raise ValueError("Number of components is not <=3")
+
+
+def unpack2Dforces(file, D, U=1):
+    """
+    Unpacks ASCII files coontaining the following columns: non-dimensional time, time step, fx, fy, vx, vy.
+    fx, fy are the pressure forces and vx, vy the viscous forces (not returned with this function).
+    :param file: File to read from.
+    :param D: Characteristic length.
+    :param U: characteristic velocity.
+    :return: time, fx, fy.
+    """
     tD, dt, fx, fy, _, _ = np.loadtxt(file, unpack=True)  # 2D
-    return tD*D, fx, fy
+    return tD*D/U, fx, fy
 
 
-def unpack3Dforces(D, file):
+def unpack3Dforces(file, D, U=1):
+    """
+    Unpacks ASCII files containing the following columns: non-dimensional time, time step, fx, fy, fz, vx, vy, vz.
+    fx, fy, fz are the pressure forces and vx, vy, vz the viscous forces (not returned with this function).
+    :param file: File to read from.
+    :param D: Characteristic length.
+    :param U: characteristic velocity.
+    :return: time, fx, fy.
+    """
     tD, dt, fx, fy, _, _, _, _ = np.loadtxt(file, unpack=True) #3D
-    return tD*D, fx, fy
+    return tD*D/U, fx, fy
 
 
-def unpackTimeSeries(npoints, file):
+def unpackTimeSeries(file, npoints):
+    """
+    Unpacks ASCII files containing the following columns: non-dimensional time, point1, point2, ...
+    :param file:
+    :param npoints: number of points recorded in the file
+    :return: time, point1, point2, ...
+    """
     if npoints == 1:
         t, p = np.loadtxt(file, unpack=True)  # 3D
         return t, p

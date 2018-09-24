@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 @author: B. Font Garcia
-@description: CL CD St rms calculations
+@description: St, number of periocs and CL, CD rms calculations
 @contact: b.fontgarcia@soton.ac.uk
 """
 # Imports
@@ -9,7 +9,15 @@ import numpy as np
 
 # Functions
 def find_St(t, fy, D, U):
+    """
+    :param t: Time series.
+    :param fy: Lift force series.
+    :param D: Characteristic length
+    :param U: Characteristic velocity
+    :return: Strouhal number, or non-dimensional shedding frequency.
+    """
     from scipy.interpolate import interp1d
+
     # Re-sample fy on a evenly spaced time series (constant dt)
     fy_function = interp1d(t, fy)
     t_min, t_max = np.min(t), np.max(t)
@@ -26,9 +34,19 @@ def find_St(t, fy, D, U):
     return abs(freq*df)*D/U
 
 def rms(y):
+    """
+    Compute the rms value of a signal y
+    :param y: Signal
+    :return: y_rms
+    """
     return np.sqrt(np.mean(y**2))
 
 def find_num_periods(y):
+    """
+    Find the number of periods in a signal
+    :param y: Signal
+    :return: Number of periods.
+    """
     n_periods = 0
     for i in np.arange(0, len(y)-2):
         if y[i]>0 and y[i+1] <= 0:

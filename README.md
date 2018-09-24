@@ -2,7 +2,7 @@
 ## **PostProc**  
 ### A post-processing package for my PhD CFD simulations
 
-This library has the goal of gathering all the python scripts I write for post-processing Computational Fluid Dynamics simulations (CFD) data I use for my PhD. By making it public I hope someone else can find this useful as well.
+This library has the goal of gathering all the python scripts I write for post-processing Computational Fluid Dynamics simulations (CFD) data I produce for my PhD. By making it public I hope someone else can find this useful as well.
 
 This repository contains the ``postproc`` package provided with the following tools
 
@@ -10,13 +10,16 @@ This repository contains the ``postproc`` package provided with the following to
 
 - ``calc.py``: module containing functions to compute flow field operations such as derivatives, averages, decompositions and vorticity vector calculation.
 
-- ``io.py``: functions related to import binary data from Fortran simulations. Imports 2D or 3D flow fields with a specified number of components. It Also imports text files written in columns with the ``unpack*`` functions.
+- ``io.py``: functions related to import binary data from Fortran simulations. Imports 2D or 3D flow fields with a specified number of components. It also imports text files written in columns with the ``unpack*`` functions.
 
-- ``plotter.py``: module equipped with subroutines to many different type of plots according to the input data. From 2D contours to CL-t graphs and turbulent kinetic energy plots.
+- ``plotter.py``: module equipped with subroutines to generate many different type of plots according to the input data. From 2D contours to CL-t graphs and turbulent kinetic energy plots, Lumley's triagle plot and more.
 
-- ``anisotropy_tensor.py``: calculate the Reynolds stresses normalized anisotropy tensor from the Reynolds stresses tensor and its invariants.
+- ``anisotropy_tensor.py``: functions to compute the Reynolds stresses normalized anisotropy tensor from the Reynolds stresses tensor and its invariants.
 
-- ``temporal_spectra.py``: module to compute the temporal spectra of a certain quantity.
+- ``frequency_spectra.py``: module to compute the frequency spectra of a temporal signal.
+
+- ``wavenumber_spectra.py``: module to compute the wavenumber spectra of a spatial vector or scalar field.
+
 
 
 ### Installation
@@ -27,7 +30,7 @@ To install this package in your workstation you only need ``git`` and ``pip3``. 
 	cd postproc
 	sudo pip3 install . -e
 
-This will install the `postproc` package at you `python3`  libraries folder (probably `/usr/lib/python3/dist-packages`). In order to be able to perform modification on the package without the need of reinstalling the `-e` (editable) argument is used. This provides the source path of the package to the installed library so any modification on the source code (on the folder you have downloaded and installed from) is immediately available with no need to re-install.
+This will install the `postproc` package at you `python3`  libraries folder (probably `/usr/lib/python3/dist-packages`). In order to be able to perform modification on the package without the need of reinstalling the `-e` (editable) argument is used. This provides the source path of the package to the installed library so any modifications on the source code (the folder you have downloaded and installed from) is immediately available with no need to re-install.
 
 ### Usage
 
