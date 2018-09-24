@@ -9,6 +9,12 @@ import numpy as np
 import matplotlib as mpl
 # ! Uncomment for running plyplot without window display
 import matplotlib.pyplot as plt
+plt.rc('text', usetex=True )
+plt.rc('font',family = 'sans-serif',  size=15)
+mpl.rc('xtick', labelsize=10)
+mpl.rc('ytick', labelsize=10)
+# mpl.rcParams['mathtext.fontset'] = 'stix'
+# mpl.rcParams['font.family'] = 'STIXGeneral'
 
 colors = ['red', 'blue', 'green', 'cyan', 'orange', 'magenta']
 markers = ['o', 'x', 'v', '^', 's', '*']
@@ -62,7 +68,9 @@ def plot2D(u, cmap, lvls, lim, file, **kwargs):
 
     # Create contourf given a normalized (norm) colormap (cmap)
     norm = colors.Normalize(vmin=lim[0], vmax=lim[1])
-    cf = plt.contourf(x, y, u, lvls, vmin=lim[0], vmax=lim[1], norm=norm, cmap=cmap)
+    # cf = plt.contourf(x, y, u, '--', lvls, vmin=lim[0], vmax=lim[1], norm=norm, cmap=cmap)
+    ax.contour(x, y, u, lvls, linewidths=0.1, colors='k')
+    cf = ax.contourf(x, y, u, lvls, vmin=lim[0], vmax=lim[1], norm=norm, cmap=cmap)
 
     # Scale contourf and set limits
     plt.axis('scaled')
@@ -352,7 +360,7 @@ def plotXYSpatial_list(file, y_tuple_list, **kwargs):
 
 
 # ------------------------------------------------------ LogLog Spatial
-def plotLogLogSpatialSpectra(freqs, uk, file):
+def plotLogLogSpatialSpectra(wn, uk, file):
     """
     Generate a loglog plot of a time spectra series using the matplotlib library given the arguments
     """
@@ -363,14 +371,14 @@ def plotLogLogSpatialSpectra(freqs, uk, file):
     fig  = plt.gcf()
 
     # Show lines
-    plt.loglog(freqs, uk, color='black', lw=1.5, label='$L_z = piD$')
-    x, y = loglogLine(p2=(max(freqs), 5e-4), p1x=min(freqs)*10, m=-5/3)
+    plt.loglog(wn, uk, color='black', lw=1.5, label='$L_z = piD$')
+    x, y = loglogLine(p2=(max(wn), 5e-4), p1x=min(wn)*10, m=-5/3)
     plt.loglog(x, y, color='black', lw=1, ls='dotted')
-    x, y = loglogLine(p2=(max(freqs), 4e-4), p1x=min(freqs)*10, m=-3)
+    x, y = loglogLine(p2=(max(wn), 4e-4), p1x=min(wn)*10, m=-3)
     plt.loglog(x, y, color='black', lw=1, ls='dashdot')
 
     # Set limits
-    # ax.set_xlim(min(freqs)*10, max(freqs))
+    # ax.set_xlim(min(wn)*10, max(wn))
     # ax.set_ylim(1e-5, 1e-1)
 
     fig, ax = makeSquare(fig,ax)
@@ -384,6 +392,64 @@ def plotLogLogSpatialSpectra(freqs, uk, file):
     # Anotations
     # plt.text(x=5e-3, y=2e-1, s='$-5/3$', color='black')
     # plt.text(x=1e-2, y=1, s='$-3$', color='black')
+
+    # Show plot and save figure
+    plt.show()
+    plt.savefig(file, transparent=True, bbox_inches='tight')
+    return
+
+
+def plotLogLogSpatialSpectra_list(file, tke_tuple_list, wn_list):
+    """
+    Generate a loglog plot of a time spectra series using the matplotlib library given the arguments
+    """
+    # Basic definitions
+    plt.switch_backend('PDF')
+    plt.rcParams['text.usetex'] = True  # Set TeX interpreter
+    ax = plt.gca()
+    fig  = plt.gcf()
+
+    # Show lines
+    for i, tke_tuple in enumerate(tke_tuple_list):
+        label = tke_tuple[0]
+        if 'piD' in label: label = '\pi D'
+        tke = tke_tuple[1]
+        label = '$'+label+'$'
+        color = colors[i]
+        plt.loglog(wn_list[i], tke, color=color, lw=0.5, label=label)
+
+    # x, y = loglogLine(p2=(3,1e-4), p1x=1e-2, m=-5/3)
+    # plt.loglog(x, y, color='black', lw=1, ls='dotted')
+    # x, y = loglogLine(p2=(4, 2e-5), p1x=1e-2, m=-3)
+    # plt.loglog(x, y, color='black', lw=1, ls='dashdot')
+    # x, y = loglogLine(p2=(4, 2e-5), p1x=1e-2, m=-11/3)
+    # plt.loglog(x, y, color='black', lw=1, ls='dashed')
+
+    x, y = loglogLine(p2=(3,1e2), p1x=1e-2, m=-5/3)
+    plt.loglog(x, y, color='black', lw=1, ls='dotted')
+    x, y = loglogLine(p2=(4, 1e3), p1x=1e-2, m=-3)
+    plt.loglog(x, y, color='black', lw=1, ls='dashdot')
+    x, y = loglogLine(p2=(4, 1e3), p1x=1e-2, m=-11/3)
+    plt.loglog(x, y, color='black', lw=1, ls='dashed')
+
+    # Set limits
+    # ax.set_xlim(1e-3, 1.5)
+    # ax.set_ylim(1e-8, 1)
+
+    fig, ax = makeSquare(fig,ax)
+    # ax.xaxis.set_tick_params(labeltop='on')
+    ax.tick_params(bottom="on", top="on", which='both')
+
+    # Edit frame, labels and legend
+    plt.xlabel('$kD$')
+    plt.ylabel('$tke$')
+    leg = plt.legend(loc='upper right')
+    leg.get_frame().set_edgecolor('white')
+
+    # Anotations
+    # plt.text(x=1e-2, y=1e1, s='$-5/3$', color='black')
+    # plt.text(x=1e-2, y=3e5, s='$-3$', color='black')
+    # plt.text(x=2e-2, y=4e2, s='$-11/3$', color='black')
 
     # Show plot and save figure
     plt.show()
@@ -450,7 +516,7 @@ def plotLogLogTimeSpectra_list(file, uk_tuple_list, freqs_list):
         uk = uk_tuple[1]
         label = '$'+label+'$'
         color = colors[i]
-        plt.loglog(freqs_list[i], uk, color=color, lw=0.2, label=label)
+        plt.loglog(freqs_list[i], uk, color=color, lw=0.5, label=label)
 
     x, y = loglogLine(p2=(1,1e-6), p1x=1e-3, m=-5/3)
     plt.loglog(x, y, color='black', lw=1, ls='dotted')
@@ -464,10 +530,12 @@ def plotLogLogTimeSpectra_list(file, uk_tuple_list, freqs_list):
     ax.set_ylim(1e-8, 1)
 
     fig, ax = makeSquare(fig,ax)
+    # ax.xaxis.set_tick_params(labeltop='on')
+    ax.tick_params(bottom="on", top="on", which='both')
 
     # Edit frame, labels and legend
     plt.xlabel(r'$f$')
-    plt.ylabel(r'$F(u)$')
+    plt.ylabel(r'$F(v)$')
     leg = plt.legend(loc='upper right')
     leg.get_frame().set_edgecolor('white')
 

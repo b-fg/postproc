@@ -9,6 +9,48 @@
 import numpy as np
 
 # Functions
+def read_fractioned_data(f_w_list, shape, **kwargs):
+    ncomponents = kwargs.get('ncomponents', len(shape))
+    if ncomponents == 1:
+        aw_tot = 0
+        w_tot = 0
+        for tup in f_w_list:
+            file = tup[0]
+            w = tup[1]
+            a = read_data(file, shape, **kwargs)
+            aw_tot += a*w
+            w_tot += w
+        return aw_tot/w_tot
+    elif ncomponents == 2:
+        aw_tot = 0
+        bw_tot = 0
+        w_tot = 0
+        for tup in f_w_list:
+            file = tup[0]
+            w = tup[1]
+            a, b = read_data(file, shape, **kwargs)
+            aw_tot += a*w
+            bw_tot += b*w
+            w_tot += w
+        return aw_tot/w_tot, bw_tot/w_tot
+    elif ncomponents == 3:
+        aw_tot = 0
+        bw_tot = 0
+        cw_tot = 0
+        w_tot = 0
+        for tup in f_w_list:
+            file = tup[0]
+            w = tup[1]
+            a, b, c = read_data(file, shape, **kwargs)
+            aw_tot += a * w
+            bw_tot += b * w
+            cw_tot += c * w
+            w_tot += w
+        return aw_tot/w_tot, bw_tot/w_tot, cw_tot/w_tot
+    else:
+         raise ValueError("Number of components is not <=3")
+
+
 def read_data(file, shape, **kwargs):
     """
     Return the velocity components of a velocity vector field stored in binary format.
