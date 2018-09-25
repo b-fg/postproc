@@ -1,3 +1,0 @@
-models.py - Matlab and Python with mixing length
-kinetic_energy.py (ek, ek1, ek1_v2, ek2) - Compute kinteic energy for 1D, 2D, 3D
-plotE function in plotter.py - Plot energy spectra given E and K
