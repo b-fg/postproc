@@ -199,3 +199,11 @@ def unpackTimeSeries(file, npoints):
             return t, p1, p2, p3
     else:
         raise ValueError("Number of points is not <=3")
+
+def readTimeSeries(file, npoints):
+    """
+    Reads ASCII files containing the following columns: non-dimensional time, point1, point2, ...
+    :param file:
+    :return: 2D numpy array. Each column is a time series. Normally time is the first column. t = a[:,0]
+    """
+    return np.loadtxt(file)

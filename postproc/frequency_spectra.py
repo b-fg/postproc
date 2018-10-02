@@ -40,11 +40,16 @@ def freq_spectra(t, u, **kwargs):
         u = u_function(t_regular)
     else:
         dt = t[1]-t[0]
+        t_min, t_max = np.min(t), np.max(t)
+
     if lowpass: u = _low_pass_filter(u) # Signal filtering for high frequencies
     if windowing: u = _window(u) # Windowing
 
-    # Compute fft and associated frequencies
-    uk = np.abs(np.fft.fft(u)) / len(u)
+    # Compute power fft and associated frequencies
+    uk = np.fft.fft(u) / u.size
+    # uk = (1/np.sqrt(t_max-t_min))*np.fft.fft(u)
+    # uk = (dt/u.size)*np.fft.fft(u)
+    uk = np.abs(uk) ** 2
     freqs = np.fft.fftfreq(uk.size, d=dt)
 
     # Downsample averaging
@@ -58,7 +63,7 @@ def freq_spectra(t, u, **kwargs):
     return freqs, uk
 
 
-def freq_spectra_splits(t, u, n=8, OL=0.5, **kwargs):
+def freq_spectra_Welch(t, u, n=8, OL=0.5, **kwargs):
     """
     Returns the FFT of u together with the associated frequency after resampling the signal evenly.
     In this case, an averages of the spectras is computed.
@@ -97,6 +102,20 @@ def freq_spectra_splits(t, u, n=8, OL=0.5, **kwargs):
     return freqs_mean, uk_mean
 
 
+def freq_spectra_scipy_welch(t, u, n, OL, **kwargs):
+    import numpy as np
+    from scipy.interpolate import interp1d
+    # Re-sample u on a evenly spaced time series (constant dt)
+    u_function = interp1d(t, u, kind='cubic')
+    t_min, t_max = np.min(t), np.max(t)
+    dt = (t_max - t_min) / len(t)
+    t = np.arange(t_min, t_max, dt)[:-1]  # Regularize t and Skip last one because can be problematic if > than actual t_max
+    u = u_function(t)  # Regularize u
+
+    freqs, uk = signal.welch(u, fs=1/dt, window='hanning', nperseg=int(u.size/n), noverlap=None, scaling='spectrum')
+    return freqs, uk
+
+
 def _split_overlap(a, n, OL):
     """
     :param a: array to split and overlap.
@@ -116,7 +135,7 @@ def _split_overlap(a, n, OL):
 
 
 def _window(a):
-    w = signal.blackman(len(a))
+    w = signal.hanning(len(a))
     # w = signal.hanning(len(a))
     return a * w
 

@@ -12,7 +12,7 @@ import time
 from tqdm import tqdm
 
 # Functions
-def ke_from_ui(u_i, x_i, **kwargs):
+def ke_spectra(u_i, x_i, **kwargs):
     """
     Computes the kinetic energy (KE) of a n-dimensional velocity vector field [u_i = (u, v, w) for 3D]. If the velocity
     vector field passed is the normal Reynolds stresses r_i = (<u'u'>, <v'v'>, <w'w'>) the result is the turbulent
@@ -24,22 +24,21 @@ def ke_from_ui(u_i, x_i, **kwargs):
     """
     if len(u_i) > 3 or len(u_i) < 1 or len(x_i) > 3 or len(x_i) < 1:
         raise ValueError('Invalid field dimensions')
-    elif len(u_i) != len(x_i):
-        raise ValueError('Field dimensions must much the spatial vector components passed to the function')
+
     # Wavenumbers
-    k_i = _wavenumbers(*x_i) # kvec = (kx, ky, kz)
+    k_i = _wavenumbers(*x_i) # k_i = (kx, ky, kz)
     # FFT to compute TKE
     tke = 0
     for u in u_i:
-        # u = window_ndim(u) # Windowing
-        uk_i = np.fft.fftn(u) # FFT
-        tke += uk_i*uk_i.conjugate() #TKE
+        u = _window_ndim(u, signal.hanning) # Windowing
+        uk = np.fft.fftn(u)/u.size # FFT
+        tke += uk*uk.conjugate() #TKE
     tke = 0.5*tke
     # Calc spectra
     return _pair_integrate_fast(tke, *k_i, **kwargs)
 
 
-def wn_spectra(a, *args, **kwargs):
+def scalar_spectra(a, *args, **kwargs):
     """
     Computes the wavenumber spectra of a n-dimensional scalar field by means of nFFT. The spectra is for the wavenumber
     modulus of ak. Hence it performs and spherical integration for all the components of k_i (the wavenumber vector)
@@ -55,8 +54,9 @@ def wn_spectra(a, *args, **kwargs):
 
     k_i = _wavenumbers(*args) # k_i = (kx, ky, kz)
     # a = window_ndim(a) # Windowing
-    ak = np.fft.fftn(a) # FFT
+    ak = np.fft.fftn(a)/a.size # FFT add power spectrum??
     return _pair_integrate_fast(ak, *k_i, **kwargs) # Calc spectra
+
 
 def _pair_integrate_fast(ak, *args, **kwargs):
     """
@@ -128,6 +128,7 @@ def _window_ndim(a, wfunction):
         return a * wfunction(len(a))
     else:
         axis_idxs = np.arange(len(a.shape))
+        print(axis_idxs)
         for axis, axis_size in enumerate(a.shape):
             window = wfunction(axis_size)
             window = np.stack([window]*a.shape[axis-1], axis=axis_idxs[axis-1])

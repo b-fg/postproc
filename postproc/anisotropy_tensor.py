@@ -34,9 +34,8 @@ def invariants(b):
     :param b: normalized Reynolds stresses anisotropy tensor. np.ndarray with shape (3,3,N,M) where NxM is the field size
             of the components (2D field)
     :return: the two non-zero invariants of the normalized Reynolds stresses anisotropy tensor (np.ndarray with shape (N,M)).
-        The invariants are in the form of \eta and \xi
+        The invariants are in the form of eta and xi
     """
-
     # Calc invariants
     # b11 = b[0, 0]
     # b12 = b[0, 1]

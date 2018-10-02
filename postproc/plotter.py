@@ -10,7 +10,7 @@ import matplotlib as mpl
 # ! Uncomment for running plyplot without window display
 import matplotlib.pyplot as plt
 plt.rc('text', usetex=True )
-plt.rc('font',family = 'sans-serif',  size=15)
+plt.rc('font',family = 'sans-serif',  size=10)
 mpl.rc('xtick', labelsize=10)
 mpl.rc('ytick', labelsize=10)
 # mpl.rcParams['mathtext.fontset'] = 'stix'
@@ -232,14 +232,16 @@ def plotTKEspatial_list(file, tke_tuple_list, **kwargs):
         i += 1
 
     # Set limits
+    ylims = kwargs.get('ylims', [np.min(tke_list),  np.max(tke_list)])
+    print(ylims)
     ax.set_xlim(min(x), max(x))
-    ax.set_ylim(np.min(tke_list), np.max(tke_list)*1.1)
+    ax.set_ylim(ylims[0], ylims[1])
 
     fig, ax = makeSquare(fig,ax)
 
     if ylog:
         ax.set_yscale('log')
-        ax.set_ylim(np.min(tke_list), np.max(tke_list)*2)
+        ax.set_ylim(ylims[0], ylims[1])
 
     # Edit frame, labels and legend
     plt.xlabel('$x/D$')
@@ -425,16 +427,16 @@ def plotLogLogSpatialSpectra_list(file, tke_tuple_list, wn_list):
     # x, y = loglogLine(p2=(4, 2e-5), p1x=1e-2, m=-11/3)
     # plt.loglog(x, y, color='black', lw=1, ls='dashed')
 
-    x, y = loglogLine(p2=(3,1e2), p1x=1e-2, m=-5/3)
+    x, y = loglogLine(p2=(3,1e-7), p1x=1e-2, m=-5/3)
     plt.loglog(x, y, color='black', lw=1, ls='dotted')
-    x, y = loglogLine(p2=(4, 1e3), p1x=1e-2, m=-3)
+    x, y = loglogLine(p2=(4, 1e-9), p1x=1e-2, m=-3)
     plt.loglog(x, y, color='black', lw=1, ls='dashdot')
-    x, y = loglogLine(p2=(4, 1e3), p1x=1e-2, m=-11/3)
+    x, y = loglogLine(p2=(4, 1e-9), p1x=1e-2, m=-11/3)
     plt.loglog(x, y, color='black', lw=1, ls='dashed')
 
     # Set limits
     # ax.set_xlim(1e-3, 1.5)
-    # ax.set_ylim(1e-8, 1)
+    ax.set_ylim(1e-13, 10)
 
     fig, ax = makeSquare(fig,ax)
     # ax.xaxis.set_tick_params(labeltop='on')
@@ -518,16 +520,18 @@ def plotLogLogTimeSpectra_list(file, uk_tuple_list, freqs_list):
         color = colors[i]
         plt.loglog(freqs_list[i], uk, color=color, lw=0.5, label=label)
 
-    x, y = loglogLine(p2=(1,1e-6), p1x=1e-3, m=-5/3)
+    x, y = loglogLine(p2=(1.e0, 2.5e-6), p1x=1e-3, m=-5/3)
     plt.loglog(x, y, color='black', lw=1, ls='dotted')
-    x, y = loglogLine(p2=(1, 1e-8), p1x=1e-3, m=-3)
+    x, y = loglogLine(p2=(1.2e0, 1e-8), p1x=3e-3, m=-3)
     plt.loglog(x, y, color='black', lw=1, ls='dashdot')
-    x, y = loglogLine(p2=(1, 1e-8), p1x=1e-3, m=-11/3)
-    plt.loglog(x, y, color='black', lw=1, ls='dashed')
+    # x, y = loglogLine(p2=(1e0, 1e-8), p1x=1e-3, m=-11/3)
+    # plt.loglog(x, y, color='black', lw=1, ls='dashed')
 
     # Set limits
-    ax.set_xlim(1e-3, 1.5)
-    ax.set_ylim(1e-8, 1)
+    # ax.set_xlim(1e-3, 1.5) # Power
+    # ax.set_ylim(1e-8, 1)
+    # ax.set_xlim(1e-4, 2) # No Power
+    # ax.set_ylim(1e-11, 10)
 
     fig, ax = makeSquare(fig,ax)
     # ax.xaxis.set_tick_params(labeltop='on')
@@ -540,9 +544,12 @@ def plotLogLogTimeSpectra_list(file, uk_tuple_list, freqs_list):
     leg.get_frame().set_edgecolor('white')
 
     # Anotations
-    plt.text(x=1.2e-3, y=1e-1, s='$-5/3$', color='black')
-    plt.text(x=4e-3, y=2e-1, s='$-3$', color='black')
-    plt.text(x=1e-2, y=4e-1, s='$-11/3$', color='black')
+    # plt.text(x=3e-4, y=5e-1, s='$-5/3$', color='black', fontsize=10) # Power
+    # plt.text(x=4e-3, y=1e0, s='$-3$', color='black', fontsize=10)
+    # plt.text(x=1e-2, y=4e-1, s='$-11/3$', color='black', fontsize=10)
+    # plt.text(x=3e-4, y=5e-1, s='$-5/3$', color='black', fontsize=10) # No Power
+    # plt.text(x=4e-3, y=1e0, s='$-3$', color='black', fontsize=10)
+    # plt.text(x=1e-2, y=4e-1, s='$-11/3$', color='black', fontsize=10)
 
     # Show plot and save figure
     plt.show()
@@ -625,8 +632,8 @@ def plotLumleysTriangle_list(file, eta_tuple_list, xi_tuple_list):
     # Edit frame, labels and legend
     plt.xlabel('$\eta$')
     plt.ylabel('$ \eta $')
-    # leg = plt.legend(loc='upper left')
-    # leg.get_frame().set_edgecolor('white')
+    leg = plt.legend(loc='upper left', fontsize=10)
+    leg.get_frame().set_edgecolor('white')
 
     # Show plot and save figure
     plt.show()
