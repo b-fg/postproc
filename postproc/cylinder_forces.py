@@ -6,6 +6,8 @@
 """
 # Imports
 import numpy as np
+from scipy.interpolate import interp1d
+
 
 # Functions
 def find_St(t, fy, D, U):
@@ -16,7 +18,6 @@ def find_St(t, fy, D, U):
     :param U: Characteristic velocity
     :return: Strouhal number, or non-dimensional shedding frequency.
     """
-    from scipy.interpolate import interp1d
 
     # Re-sample fy on a evenly spaced time series (constant dt)
     fy_function = interp1d(t, fy)
@@ -52,3 +53,45 @@ def find_num_periods(y):
         if y[i]>0 and y[i+1] <= 0:
             n_periods += 1
     return n_periods-1
+
+def calc_Cp(p, L, R=45, p_inf=0.03, rho_inf=1, U_inf=1):
+    """
+    Find the Pressure coefficient Cp and the angle from a pressure-arclength series.
+    :param p:
+    :param L:
+    :param R:
+    :param p_inf:
+    :param rho_inf:
+    :param U_inf:
+    :return:
+    """
+    cp = (p-p_inf)/(0.5*rho_inf*U_inf)
+    theta = L/R*180/np.pi
+
+    cp_function = interp1d(theta, cp, kind='linear')
+    theta_min, theta_max = np.min(theta), np.max(theta)
+    dtheta = (theta_max - theta_min) / len(theta)
+    reg_theta = np.arange(theta_min, theta_max, dtheta)[:-1]  # Skip last one because can be problematic if > than actual t_max
+    reg_cp = cp_function(reg_theta)
+
+    index_cp_max = np.argmax(reg_cp)
+
+    args_sort = np.argsort(reg_theta)
+    reg_theta = reg_theta[args_sort]
+    reg_cp = reg_cp[args_sort]
+    reg_theta = reg_theta[:index_cp_max+1]
+    reg_cp = reg_cp[:index_cp_max+1]
+    reg_cp = reg_cp[::-1]
+
+    # index_roll = index_cp_max-reg_theta.size
+    # reg_theta = np.roll(reg_theta, index_cp_max)
+    # args_sort = np.argsort(reg_theta)
+    # reg_theta = reg_theta[args_sort]
+    # reg_cp = reg_cp[args_sort]
+
+    reg_theta = reg_theta[reg_theta<=180]
+    reg_cp = reg_cp[:reg_theta.size]
+
+    return reg_theta, reg_cp
+
+

@@ -16,7 +16,7 @@ mpl.rc('ytick', labelsize=10)
 # mpl.rcParams['mathtext.fontset'] = 'stix'
 # mpl.rcParams['font.family'] = 'STIXGeneral'
 
-colors = ['red', 'blue', 'green', 'cyan', 'orange', 'magenta']
+colors = ['red', 'blue', 'green', 'cyan', 'orange', 'magenta', 'black', 'yellow']
 markers = ['o', 'x', 'v', '^', 's', '*']
 
 # Functions
@@ -361,6 +361,52 @@ def plotXYSpatial_list(file, y_tuple_list, **kwargs):
     return
 
 
+def plotCp_list(file, y_tuple_list, x_list, **kwargs):
+    """
+    Generate a XY plot
+    """
+    # Basic definitions
+    plt.switch_backend('PDF')
+    plt.rcParams['text.usetex'] = True  # Set TeX interpreter
+    ax = plt.gca()
+    fig  = plt.gcf()
+
+    if not y_tuple_list:
+        raise ValueError("No series passed to the function.")
+    else:
+        N = y_tuple_list[0][1].shape[0]
+    ylabel = '$' + kwargs.get('ylabel','') + '$'
+
+    # Show lines
+    y_list = []
+    i = 0
+    for y_tuple in y_tuple_list:
+        label = y_tuple[0]
+        if 'piD' in label: label = '\pi D'
+        y = y_tuple[1]
+        label = '$'+label+'$'
+        color = colors[i]
+
+        plt.plot(x_list[i], y, color=color, lw=1.5, label=label)
+        y_list.append(y)
+        i += 1
+
+    # Edit figure, axis, limits
+    ax.set_xlim(0, 180)
+    # fig, ax = makeSquare(fig,ax)
+
+    # Edit frame, labels and legend
+    plt.xlabel(r'$\theta$')
+    plt.ylabel(ylabel)
+    leg = plt.legend(loc='upper right')
+    leg.get_frame().set_edgecolor('white')
+
+    # Show plot and save figure
+    plt.show()
+    plt.savefig(file, transparent=True, bbox_inches='tight')
+    return
+
+
 # ------------------------------------------------------ LogLog Spatial
 def plotLogLogSpatialSpectra(wn, uk, file):
     """
@@ -520,26 +566,26 @@ def plotLogLogTimeSpectra_list(file, uk_tuple_list, freqs_list):
         color = colors[i]
         plt.loglog(freqs_list[i], uk, color=color, lw=0.5, label=label)
 
-    x, y = loglogLine(p2=(1.e0, 2.5e-6), p1x=1e-3, m=-5/3)
+    x, y = loglogLine(p2=(1.e2, 1e-7), p1x=1e-2, m=-5/3)
     plt.loglog(x, y, color='black', lw=1, ls='dotted')
-    x, y = loglogLine(p2=(1.2e0, 1e-8), p1x=3e-3, m=-3)
+    x, y = loglogLine(p2=(1.2e2, 1e-9), p1x=1e-2, m=-3)
     plt.loglog(x, y, color='black', lw=1, ls='dashdot')
     # x, y = loglogLine(p2=(1e0, 1e-8), p1x=1e-3, m=-11/3)
     # plt.loglog(x, y, color='black', lw=1, ls='dashed')
 
     # Set limits
-    # ax.set_xlim(1e-3, 1.5) # Power
-    # ax.set_ylim(1e-8, 1)
-    # ax.set_xlim(1e-4, 2) # No Power
-    # ax.set_ylim(1e-11, 10)
+    # ax.set_xlim(np.min(freqs_list[0]), 2e-1)
+    # ax.set_ylim(1e-8, 1e-1)
+    ax.set_xlim(1e-2, 1e2) # Window
+    ax.set_ylim(1e-11, 1e-1)
 
     fig, ax = makeSquare(fig,ax)
     # ax.xaxis.set_tick_params(labeltop='on')
     ax.tick_params(bottom="on", top="on", which='both')
 
     # Edit frame, labels and legend
-    plt.xlabel(r'$f$')
-    plt.ylabel(r'$F(v)$')
+    plt.xlabel(r'$f/UD$')
+    plt.ylabel(r'$SPS$')
     leg = plt.legend(loc='upper right')
     leg.get_frame().set_edgecolor('white')
 
@@ -584,8 +630,8 @@ def plotLumleysTriangle(eta, xi, file):
     fig, ax = makeSquare(fig,ax)
 
     # Edit frame, labels and legend
-    plt.xlabel('$\eta$')
-    plt.ylabel('$ \eta $')
+    plt.xlabel(r'$\eta$')
+    plt.ylabel(r'$\xi$')
     leg = plt.legend(loc='upper left')
     leg.get_frame().set_edgecolor('white')
 

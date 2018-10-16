@@ -29,10 +29,11 @@ def freq_spectra(t, u, **kwargs):
     resample = kwargs.get('resample', True)
     lowpass = kwargs.get('lowpass', True)
     windowing = kwargs.get('windowing', True)
-    downsample = kwargs.get('downsample', 4)
+    downsample = kwargs.get('downsample', False)
 
     # Re-sample u on a evenly spaced time series (constant dt)
     if resample:
+        u = u - np.mean(u)
         u_function = interp1d(t, u, kind='cubic')
         t_min, t_max = np.min(t), np.max(t)
         dt = (t_max-t_min)/len(t)
@@ -46,8 +47,8 @@ def freq_spectra(t, u, **kwargs):
     if windowing: u = _window(u) # Windowing
 
     # Compute power fft and associated frequencies
-    uk = np.fft.fft(u) / u.size
-    # uk = (1/np.sqrt(t_max-t_min))*np.fft.fft(u)
+    # uk = np.fft.fft(u)/u.size
+    uk = (1/(t_max-t_min))*np.fft.fft(u)
     # uk = (dt/u.size)*np.fft.fft(u)
     uk = np.abs(uk) ** 2
     freqs = np.fft.fftfreq(uk.size, d=dt)
@@ -80,6 +81,7 @@ def freq_spectra_Welch(t, u, n=8, OL=0.5, **kwargs):
     from scipy.interpolate import interp1d
 
     # Re-sample u on a evenly spaced time series (constant dt)
+    u = u - np.mean(u)
     u_function = interp1d(t, u, kind='cubic')
     t_min, t_max = np.min(t), np.max(t)
     dt = (t_max - t_min) / len(t)
@@ -106,6 +108,7 @@ def freq_spectra_scipy_welch(t, u, n, OL, **kwargs):
     import numpy as np
     from scipy.interpolate import interp1d
     # Re-sample u on a evenly spaced time series (constant dt)
+    u = u - np.mean(u)
     u_function = interp1d(t, u, kind='cubic')
     t_min, t_max = np.min(t), np.max(t)
     dt = (t_max - t_min) / len(t)

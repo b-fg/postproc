@@ -27,7 +27,7 @@ def read_data(file, shape, **kwargs):
         ncomponents: Specify the number of components. Default = ndims of the field
     :return: the components of the vector or scalar field.
     """
-    dtype = kwargs.get('periodic', np.single)
+    dtype = kwargs.get('dtype', np.single)
     periodic = kwargs.get('periodic', False)
     ncomponents = kwargs.get('ncomponents', len(shape))
 
@@ -99,7 +99,18 @@ def read_data(file, shape, **kwargs):
         raise ValueError("Shape is not two- nor three-dimensional")
 
 
-def read_fractioned_mean_data(f_w_list, shape, **kwargs):
+def read_data_raw(file, shape, ncomponents):
+    shape = tuple(reversed(shape))
+    shape_comp = shape + (ncomponents,)
+
+    f = open(file, 'rb')
+    data = np.fromfile(file=f, dtype=np.single).reshape(shape_comp)
+    f.close()
+
+    return data
+
+
+def read_and_write_fractioned_mean_data(f_w_list, shape, **kwargs):
     """
     Computes a weighted average of files which containg partial averages of quantities.
     :param f_w_list: list of tuples containing (file, weight).
@@ -114,6 +125,7 @@ def read_fractioned_mean_data(f_w_list, shape, **kwargs):
         ncomponents: Specify the number of components. Default = ndims of the field
     :return: The weighted average of the files containing partial averages.
     """
+    dtype = kwargs.get('dtype', np.single)
     ncomponents = kwargs.get('ncomponents', len(shape))
     if ncomponents == 1:
         aw_tot = 0
@@ -121,10 +133,20 @@ def read_fractioned_mean_data(f_w_list, shape, **kwargs):
         for tup in f_w_list:
             file = tup[0]
             w = tup[1]
-            a = read_data(file, shape, **kwargs)
+            data = read_data_raw(file, shape, ncomponents)
+            if len(shape) == 2:
+                a = data[:, :, 0]
+            elif len(shape) == 3:
+                a = data[:, :, :, 0]
             aw_tot += a*w
             w_tot += w
-        return aw_tot/w_tot
+
+        a_mean = aw_tot/w_tot
+        a_mean = a_mean.astype(np.float64, copy=False)
+
+        a_mean.tofile(file[:-4]+'_python_mean.dat')
+        return
+
     elif ncomponents == 2:
         aw_tot = 0
         bw_tot = 0
@@ -132,11 +154,24 @@ def read_fractioned_mean_data(f_w_list, shape, **kwargs):
         for tup in f_w_list:
             file = tup[0]
             w = tup[1]
-            a, b = read_data(file, shape, **kwargs)
+            data = read_data_raw(file, shape, ncomponents)
+            if len(shape) == 2:
+                a = data[:, :, 0]
+                b = data[:, :, 1]
+            elif len(shape) == 3:
+                a = data[:, :, :, 0]
+                b = data[:, :, :, 1]
             aw_tot += a*w
             bw_tot += b*w
             w_tot += w
-        return aw_tot/w_tot, bw_tot/w_tot
+
+        a_mean, b_mean = aw_tot/w_tot, bw_tot/w_tot
+        a_mean = a_mean.astype(np.float64, copy=False)
+        b_mean = b_mean.astype(np.float64, copy=False)
+        r_mean = np.stack((a_mean, b_mean), axis=-1)
+        r_mean.tofile(file[:-4]+'_python_mean.dat')
+        return
+
     elif ncomponents == 3:
         aw_tot = 0
         bw_tot = 0
@@ -145,12 +180,27 @@ def read_fractioned_mean_data(f_w_list, shape, **kwargs):
         for tup in f_w_list:
             file = tup[0]
             w = tup[1]
-            a, b, c = read_data(file, shape, **kwargs)
+            data = read_data_raw(file, shape, ncomponents)
+            if len(shape) == 2:
+                a = data[:, :, 0]
+                b = data[:, :, 1]
+                c = data[:, :, 2]
+            elif len(shape) == 3:
+                a = data[:, :, :, 0]
+                b = data[:, :, :, 1]
+                c = data[:, :, :, 2]
             aw_tot += a * w
             bw_tot += b * w
             cw_tot += c * w
             w_tot += w
-        return aw_tot/w_tot, bw_tot/w_tot, cw_tot/w_tot
+
+        a_mean, b_mean, c_mean =  aw_tot/w_tot, bw_tot/w_tot, cw_tot/w_tot
+        a_mean = a_mean.astype(np.float64, copy=False)
+        b_mean = b_mean.astype(np.float64, copy=False)
+        c_mean = c_mean.astype(np.float64, copy=False)
+        r_mean = np.stack((a_mean, b_mean, c_mean), axis=-1)
+        r_mean.tofile(file[:-4] + '_python_mean.dat')
+        return
     else:
          raise ValueError("Number of components is not <=3")
 
@@ -200,10 +250,18 @@ def unpackTimeSeries(file, npoints):
     else:
         raise ValueError("Number of points is not <=3")
 
-def readTimeSeries(file, npoints):
+def readTimeSeries(file):
     """
     Reads ASCII files containing the following columns: non-dimensional time, point1, point2, ...
     :param file:
     :return: 2D numpy array. Each column is a time series. Normally time is the first column. t = a[:,0]
     """
     return np.loadtxt(file)
+
+def readPressureArcLength(file):
+    p, L = np.loadtxt(file, unpack=True, skiprows=1, delimiter=',')
+    return p, L
+
+def importExpCpTheta(file):
+    theta, cp = np.loadtxt(file, unpack=True, delimiter=',')
+    return theta, cp
