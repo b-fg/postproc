@@ -13,11 +13,14 @@ plt.rc('text', usetex=True )
 plt.rc('font',family = 'sans-serif',  size=10)
 mpl.rc('xtick', labelsize=10)
 mpl.rc('ytick', labelsize=10)
+mpl.rcParams['axes.linewidth'] = 0.5
 # mpl.rcParams['mathtext.fontset'] = 'stix'
 # mpl.rcParams['font.family'] = 'STIXGeneral'
 
-colors = ['red', 'blue', 'green', 'cyan', 'orange', 'magenta', 'black', 'yellow']
-markers = ['o', 'x', 'v', '^', 's', '*']
+# colors = ['red', 'blue', 'green', 'cyan', 'orange', 'magenta', 'black', 'yellow']
+colors = ['orange', 'cyan', 'green', 'blue', 'red', 'magenta', 'black', 'yellow']
+# markers = ['o', 'x', 'v', '^', 's', '*']
+markers = ['s', '^', 'v', 'x', 'o', '*']
 
 # Functions
 
@@ -40,6 +43,7 @@ def plot2D(u, cmap, lvls, lim, file, **kwargs):
     # plt.switch_backend('AGG')
     # plt.switch_backend('PS')
     plt.switch_backend('PDF')
+    # plt.switch_backend('PS')
     # plt.switch_backend('SVG')
     import matplotlib.colors as colors
     from mpl_toolkits.axes_grid1 import make_axes_locatable
@@ -54,9 +58,13 @@ def plot2D(u, cmap, lvls, lim, file, **kwargs):
     else:
         ymin, ymax = kwargs['y'][0], kwargs['y'][1]
     annotate = kwargs.get('annotate', False)
+    scaling = kwargs.get('scaling', 1)
+    xshift = kwargs.get('xshift', 0)
+    yshift = kwargs.get('yshift', 0)
 
     # Uniform grid generation
-    x, y = np.linspace(xmin, xmax, N), np.linspace(ymin, ymax, M)
+    x, y = np.linspace(xmin/scaling, xmax/scaling, N), np.linspace(ymin/scaling, ymax/scaling, M)
+    x, y = x+xshift, y+yshift
     x, y = np.meshgrid(x, y)
     u = np.transpose(u)
 
@@ -64,24 +72,30 @@ def plot2D(u, cmap, lvls, lim, file, **kwargs):
     fig1 = plt.gcf()
     ax = plt.gca()
     # plt.rcParams['text.usetex'] = False  # Set TeX interpreter
-    mpl.rc('font', family='DejaVu Sans')
+    # mpl.rc('font', family='DejaVu Sans')
 
     # Create contourf given a normalized (norm) colormap (cmap)
     norm = colors.Normalize(vmin=lim[0], vmax=lim[1])
     # cf = plt.contourf(x, y, u, '--', lvls, vmin=lim[0], vmax=lim[1], norm=norm, cmap=cmap)
-    ax.contour(x, y, u, lvls, linewidths=0.1, colors='k')
-    cf = ax.contourf(x, y, u, lvls, vmin=lim[0], vmax=lim[1], norm=norm, cmap=cmap)
+    ax.contour(x, y, u, lvls, linewidths=0.5, colors='k')
+    # cf = ax.contourf(x, y, u, lvls, vmin=lim[0], vmax=lim[1], norm=norm, cmap=cmap)
+
+    ax.xaxis.set_ticks([0.5, 1.0, 1.5, 2])
+    ax.yaxis.set_ticks([-0.5, 0.0, 0.5])
+    ax.tick_params(bottom="on", top="on", right="on", which='both', direction='in', length=2)
 
     # Scale contourf and set limits
     plt.axis('scaled')
     plt.xlim(np.min(x), np.max(x))
     plt.ylim(np.min(y), np.max(y))
 
+    # ax.xaxis.set_ticks(np.arange(0.5, 2.5, 0.5))
+
     # Scale colorbar to contourf
-    divider = make_axes_locatable(ax)
-    cax = divider.append_axes("right", size="5%", pad=0.05, aspect=10)
-    cbax = plt.colorbar(cf, cax=cax).ax
-    mpl.colorbar.ColorbarBase(cbax, norm=norm, cmap=cmap)
+    # divider = make_axes_locatable(ax)
+    # cax = divider.append_axes("right", size="5%", pad=0.05, aspect=10)
+    # cbax = plt.colorbar(cf, cax=cax).ax
+    # mpl.colorbar.ColorbarBase(cbax, norm=norm, cmap=cmap)
 
     # Add annotation if desired
     if annotate:
@@ -100,6 +114,77 @@ def plot2D(u, cmap, lvls, lim, file, **kwargs):
     # plt.clf()
     return
 
+def plot2Dvort(u, cmap, lvls, lim, file, **kwargs):
+    """
+    Return nothing and saves the figure in the specified file name.
+    Args:
+        cmap: matplotlib cmap. Eg: cmap = "seismic"
+        lvls: number of levels of the contour. Eg: lvls = 100
+        lim:  min and max values of the contour passed as array. Eg: lim = [-0.5, 0.5]
+        file: Name of the file to save the plot (recommended .pdf so it can be converted get .svg).
+              Eg: file = "dUdy.pdf"
+    Kwargs:
+        x=[xmin,xmax] is the x axis minimum and maximum specified
+        y=[ymin,ymax] is the y axis minimum and maximum specified
+        annotate: Boolean if annotations for min and max values of the field (and locations) are desired
+    """
+    # Internal imports
+    plt.switch_backend('PDF')
+    # plt.switch_backend('SVG')
+    # plt.switch_backend('PS')
+    import matplotlib.colors as colors
+    from mpl_toolkits.axes_grid1 import make_axes_locatable
+    plt.rc('font', family='sans-serif', size=6)
+    mpl.rc('xtick', labelsize=6)
+    mpl.rc('ytick', labelsize=6)
+
+    N, M = u.shape[0], u.shape[1]
+    if not 'x' in kwargs:
+        xmin, xmax = 0, N-1
+    else:
+        xmin, xmax = kwargs['x'][0], kwargs['x'][1]
+    if not 'y' in kwargs:
+        ymin, ymax = -M/2, M/2-1
+    else:
+        ymin, ymax = kwargs['y'][0], kwargs['y'][1]
+    annotate = kwargs.get('annotate', False)
+    scaling = kwargs.get('scaling', 1)
+    xshift = kwargs.get('xshift', 0)
+    yshift = kwargs.get('yshift', 0)
+
+    # Uniform grid generation
+    x, y = np.linspace(xmin/scaling, xmax/scaling, N), np.linspace(ymin/scaling, ymax/scaling, M)
+    x, y = x+xshift, y+yshift
+    x, y = np.meshgrid(x, y)
+    u = np.transpose(u)
+
+    # Matplotlib definitions
+    fig1 = plt.gcf()
+    ax = plt.gca()
+    # plt.rcParams['text.usetex'] = False  # Set TeX interpreter
+    # mpl.rc('font', family='DejaVu Sans')
+
+    # Create contourf given a normalized (norm) colormap (cmap)
+    norm = colors.Normalize(vmin=lim[0], vmax=lim[1])
+    # cf = plt.contourf(x, y, u, lvls, vmin=lim[0], vmax=lim[1], norm=norm, cmap=cmap)
+    ax.contour(x, y, u, lvls, linewidths=0.2, colors='k')
+    cf = ax.contourf(x, y, u, lvls, vmin=lim[0], vmax=lim[1], norm=norm, cmap=cmap)
+
+    # Scale contourf and set limits
+    plt.axis('scaled')
+    plt.xlim(np.min(x), np.max(x))
+    plt.ylim(np.min(y), np.max(y))
+
+    # ax.xaxis.set_ticks(np.arange(0.5, 2.5, 0.5))
+    ax.yaxis.set_ticks([-2,0,2])
+    ax.tick_params(bottom="on", top="on", right="on", which='both', direction='in', length=2)
+
+    # Show, save and close figure
+    plt.show()
+    plt.savefig(file, transparent=True, bbox_inches='tight')
+    # plt.draw()
+    # plt.clf()
+    return
 
 # ------------------------------------------------------ CL-t
 def plotCL(fy, t, file, **kwargs):
@@ -220,14 +305,15 @@ def plotTKEspatial_list(file, tke_tuple_list, **kwargs):
     i = 0
     for tke_tuple in tke_tuple_list:
         label = tke_tuple[0]
-        if 'piD' in label: label = '\pi D'
+        if 'piD' in label: label = '\pi'
+        else: label = label[:-1]
         tke = tke_tuple[1]
         if 'xD_min' in kwargs:
             x = x[x > kwargs['xD_min']]
             tke = tke[-x.size:]
         label = '$'+label+'$'
         color = colors[i]
-        plt.plot(x, tke, color=color, lw=1.5, label=label)
+        plt.plot(x, tke, color=color, lw=1.5, label=label, marker=markers[i], markevery=50, markersize=4)
         tke_list.append(tke)
         i += 1
 
@@ -242,12 +328,18 @@ def plotTKEspatial_list(file, tke_tuple_list, **kwargs):
     if ylog:
         ax.set_yscale('log')
         ax.set_ylim(ylims[0], ylims[1])
+        plt.minorticks_off()
 
     # Edit frame, labels and legend
     plt.xlabel('$x/D$')
     plt.ylabel(ylabel)
-    leg = plt.legend(loc='lower right')
+    leg = plt.legend(loc='lower center')
     leg.get_frame().set_edgecolor('white')
+    leg.get_frame().set_facecolor('white')
+    leg.get_frame().set_linewidth(0)
+    leg.get_frame().set_alpha(0)
+    # ax.yaxis.set_ticks([-2, 0, 2])
+    ax.tick_params(bottom="on", top="on", right="on", which='both', direction='in', length=2)
 
     # Show plot and save figure
     plt.show()
@@ -329,7 +421,8 @@ def plotXYSpatial_list(file, y_tuple_list, **kwargs):
     i = 0
     for y_tuple in y_tuple_list:
         label = y_tuple[0]
-        if 'piD' in label: label = '\pi D'
+        if 'piD' in label: label = '\pi'
+        else: label = label[:-1]
         y = y_tuple[1]
         label = '$'+label+'$'
         color = colors[i]
@@ -338,7 +431,7 @@ def plotXYSpatial_list(file, y_tuple_list, **kwargs):
             x = x[x > kwargs['xD_min']]
             y = y[-x.size:]
 
-        plt.plot(x, y, color=color, lw=1.5, label=label)
+        plt.plot(x, y, color=color, lw=1, label=label, marker=markers[i], markevery=50, markersize=4)
         y_list.append(y)
         i += 1
 
@@ -346,18 +439,31 @@ def plotXYSpatial_list(file, y_tuple_list, **kwargs):
     ax.set_xlim(min(x), max(x))
     if ylog:
         ax.set_yscale('log')
+        plt.minorticks_off()
 
-    # fig, ax = makeSquare(fig,ax)
+    fig, ax = makeSquare(fig,ax)
 
     # Edit frame, labels and legend
-    plt.xlabel('$x/D$')
-    plt.ylabel(ylabel)
-    leg = plt.legend(loc='upper right')
+    plt.xlabel('$x$')
+    plt.ylabel(ylabel, rotation=0)
+    if 'R' in ylabel:
+        leg = plt.legend(loc='upper left')
+        # ax.yaxis.set_ticks([0.2, 0.4, 0.6, 0.8, 1.0, 1.2])
+        ax.yaxis.set_ticks([0.0, 0.4, 0.8, 1.2])
+    else:
+        leg = plt.legend(loc='upper right')
+
     leg.get_frame().set_edgecolor('white')
+    leg.get_frame().set_facecolor('white')
+    leg.get_frame().set_linewidth(0)
+    leg.get_frame().set_alpha(0)
+
+    ax.tick_params(bottom="on", top="on", right="on", which='both', direction='in', length=2)
 
     # Show plot and save figure
     plt.show()
     plt.savefig(file, transparent=True, bbox_inches='tight')
+    plt.clf()
     return
 
 
@@ -366,7 +472,7 @@ def plotCp_list(file, y_tuple_list, x_list, **kwargs):
     Generate a XY plot
     """
     # Basic definitions
-    plt.switch_backend('PDF')
+    plt.switch_backend('PS')
     plt.rcParams['text.usetex'] = True  # Set TeX interpreter
     ax = plt.gca()
     fig  = plt.gcf()
@@ -387,19 +493,28 @@ def plotCp_list(file, y_tuple_list, x_list, **kwargs):
         label = '$'+label+'$'
         color = colors[i]
 
-        plt.plot(x_list[i], y, color=color, lw=1.5, label=label)
+        # if i==1:
+            # plt.scatter(x_list[i], y, marker='^', facecolors='none', edgecolors='black', s=25, linewidths=0.5, label=label)
+            # plt.plot(x_list[i], y, color='black', lw=1, label=label)
+        if i == 0:
+            plt.scatter(x_list[i], y, marker='o', facecolors='none', edgecolors='black', s=25, linewidths=0.5, label=label)
+            # plt.plot(x_list[i], y, markerfacecolor='none', lw=1.5, label=label, marker='o', color='black')
+        else:
+            plt.plot(x_list[i], y, color='black', lw=1, label=label)
         y_list.append(y)
         i += 1
 
     # Edit figure, axis, limits
+    fig, ax = makeSquare(fig,ax)
     ax.set_xlim(0, 180)
-    # fig, ax = makeSquare(fig,ax)
+    ax.xaxis.set_ticks(np.arange(0, 181, 30))
 
     # Edit frame, labels and legend
     plt.xlabel(r'$\theta$')
-    plt.ylabel(ylabel)
+    plt.ylabel(ylabel, rotation=0)
     leg = plt.legend(loc='upper right')
     leg.get_frame().set_edgecolor('white')
+    ax.tick_params(direction='in')
 
     # Show plot and save figure
     plt.show()
@@ -560,7 +675,8 @@ def plotLogLogTimeSpectra_list(file, uk_tuple_list, freqs_list):
     # Show lines
     for i, uk_tuple in enumerate(uk_tuple_list):
         label = uk_tuple[0]
-        if 'piD' in label: label = '\pi D'
+        print(label)
+        if 'pi' in label: label = '\pi'
         uk = uk_tuple[1]
         label = '$'+label+'$'
         color = colors[i]
@@ -602,6 +718,58 @@ def plotLogLogTimeSpectra_list(file, uk_tuple_list, freqs_list):
     plt.savefig(file, transparent=True, bbox_inches='tight')
     return
 
+
+def plotLogLogTimeSpectra_list_cascade(file, uk_tuple_list, freqs_list):
+    """
+    Generate a loglog plot of a time spectra series using the matplotlib library given the arguments
+    """
+    # Basic definitions
+    plt.switch_backend('PDF')
+    plt.rcParams['text.usetex'] = True  # Set TeX interpreter
+    ax = plt.gca()
+    fig  = plt.gcf()
+
+    for i, uk_tup in enumerate(uk_tuple_list):
+        uk = uk_tup[1] * 10 ** (-i)
+        uk_tuple_list[i] = (uk_tuple_list[i][0], uk)
+
+    # Show lines
+    for i, uk_tuple in enumerate(uk_tuple_list):
+        label = uk_tuple[0]
+        print(label)
+        if 'pi' in label: label = '\pi'
+        if '2D' in label: label = '2\mathrm{D}'
+        uk = uk_tuple[1]
+        label = '$'+label+'$'
+        color = colors[i]
+        plt.loglog(freqs_list[i], uk, color=color, lw=0.5, label=label)
+
+
+    for i in np.arange(4):
+        x, y = loglogLine(p2=(1.e2, 1e-13*100**i), p1x=1e-2, m=-5/3)
+        plt.loglog(x, y, color='black', lw=0.5, ls='dotted', alpha=0.3)
+        x, y = loglogLine(p2=(1.2e2, 1e-16*100**i), p1x=1e-2, m=-3)
+        plt.loglog(x, y, color='black', lw=0.5, ls='dashdot', alpha=0.3)
+
+    # Set limits
+    ax.set_xlim(1e-2, 7e1) # Window
+    ax.set_ylim(1e-16, 1e-1)
+    # ax.set_ylim(1e-11, 1e4)
+
+
+    fig, ax = makeSquare(fig,ax)
+
+    # Edit frame, labels and legend
+    ax.tick_params(bottom="on", top="on", which='both', direction='in')
+    plt.xlabel(r'$f/UD$')
+    leg = plt.legend(loc='lower left')
+    leg.get_frame().set_edgecolor('white')
+    ax.get_yaxis().set_ticks([])
+
+    # Show plot and save figure
+    plt.show()
+    plt.savefig(file, transparent=True, bbox_inches='tight')
+    return
 
 # ------------------------------------------------------ Lumley's Triangle
 def plotLumleysTriangle(eta, xi, file):
@@ -654,15 +822,16 @@ def plotLumleysTriangle_list(file, eta_tuple_list, xi_tuple_list):
     y = np.sqrt(1/27+2*x**3)
 
     # Show lines
-    plt.plot(x, y, color='black', lw=1.5)
-    plt.plot([-1/6,0], [1/6,0], color='black', lw=1.5)
-    plt.plot([0,1/3], [0,1/3], color='black', lw=1.5)
+    plt.plot(x, y, color='black', lw=0.5)
+    plt.plot([-1/6,0], [1/6,0], color='black', lw=0.5)
+    plt.plot([0,1/3], [0,1/3], color='black', lw=0.5)
 
     # Show lines
     i = 0
     for eta in eta_tuple_list:
         label = eta[0]
-        if 'piD' in label: label = '\pi D'
+        if 'piD' in label: label = '\pi'
+        else: label = label[:-1]
         eta = eta[1]
         xi = xi_tuple_list[i][1]
         label = '$'+label+'$'
@@ -676,10 +845,54 @@ def plotLumleysTriangle_list(file, eta_tuple_list, xi_tuple_list):
     fig, ax = makeSquare(fig,ax)
 
     # Edit frame, labels and legend
-    plt.xlabel('$\eta$')
-    plt.ylabel('$ \eta $')
-    leg = plt.legend(loc='upper left', fontsize=10)
+    plt.xlabel(r'$\xi$')
+    plt.ylabel('$ \eta $', rotation=0)
+    leg = plt.legend(loc='lower right', fontsize=10)
     leg.get_frame().set_edgecolor('white')
+    leg.get_frame().set_facecolor('white')
+    leg.get_frame().set_linewidth(0)
+    leg.get_frame().set_alpha(0)
+    # ax.yaxis.set_ticks([-2, 0, 2])
+    ax.tick_params( direction='in', length=2)
+
+    # Show plot and save figure
+    plt.show()
+    plt.savefig(file, transparent=True, bbox_inches='tight')
+    return
+
+# ------------------------------------------------------ GC plots
+def error_order(file, x, y):
+    """
+    Generate a loglog plot of a time spectra series using the matplotlib library given the arguments
+    """
+    # Basic definitions
+    plt.switch_backend('PDF')
+    plt.rcParams['text.usetex'] = True  # Set TeX interpreter
+    ax = plt.gca()
+    fig  = plt.gcf()
+
+    plt.loglog(x, y, color='b', lw=0.5)
+
+    x, y = loglogLine(p2=(np.max(x), np.max(y)), p1x=np.min(x), m=2)
+    plt.loglog(x, y, color='black', lw=1, ls='dotted')
+    x, y = loglogLine(p2=(np.max(x), np.max(y)), p1x=np.min(x), m=1)
+    plt.loglog(x, y, color='black', lw=1, ls='dotted')
+    # x, y = loglogLine(p2=(1.2e2, 1e-9), p1x=1e-2, m=-3)
+    # plt.loglog(x, y, color='black', lw=1, ls='dashdot')
+    # x, y = loglogLine(p2=(1e0, 1e-8), p1x=1e-3, m=-11/3)
+    # plt.loglog(x, y, color='black', lw=1, ls='dashed')
+
+    # Set limits
+    # ax.set_xlim(np.min(freqs_list[0]), 2e-1)
+    # ax.set_ylim(1e-8, 1e-1)
+    # ax.set_xlim(1e-2, 1e2) # Window
+    # ax.set_ylim(1e-11, 1e-1)
+
+    # fig, ax = makeSquare(fig,ax)
+    # ax.xaxis.set_tick_params(labeltop='on')
+    # ax.tick_params(bottom="on", top="on", which='both')
+
+    # Edit frame, labels and legend
 
     # Show plot and save figure
     plt.show()

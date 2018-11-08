@@ -54,7 +54,7 @@ def find_num_periods(y):
             n_periods += 1
     return n_periods-1
 
-def calc_Cp(p, L, R=45, p_inf=0.03, rho_inf=1, U_inf=1):
+def calc_Cp(p, L, R=45, p_inf=0.02, rho_inf=1, U_inf=1):
     """
     Find the Pressure coefficient Cp and the angle from a pressure-arclength series.
     :param p:
