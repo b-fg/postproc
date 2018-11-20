@@ -28,7 +28,7 @@ To install this package in your workstation you only need ``git`` and ``pip3``. 
 
 	git clone https://github.com/b-fg/postproc.git
 	cd postproc
-	sudo pip3 install . -e
+	sudo pip3 install -e .
 
 This will install the `postproc` package at you `python3`  libraries folder (probably `/usr/lib/python3/dist-packages`). In order to be able to perform modification on the package without the need of reinstalling the `-e` (editable) argument is used. This provides the source path of the package to the installed library so any modifications on the source code (the folder you have downloaded and installed from) is immediately available with no need to re-install.
 
