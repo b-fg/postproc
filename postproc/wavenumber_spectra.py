@@ -8,15 +8,12 @@
 # Imports
 import numpy as np
 import scipy.signal as signal
-import time
 from tqdm import tqdm
 
 # Functions
 def ke_spectra(u_i, x_i, **kwargs):
     """
-    Computes the kinetic energy (KE) of a n-dimensional velocity vector field [u_i = (u, v, w) for 3D]. If the velocity
-    vector field passed is the normal Reynolds stresses r_i = (<u'u'>, <v'v'>, <w'w'>) the result is the turbulent
-    kinetic energy (TKE).
+    Computes the kinetic energy (KE) of a n-dimensional velocity vector field such as u_i = (u, v, w) for 3D.
     :param u_i: n-dimensional velocity vector field
     :param x_i: n-dimensional spatial vector field
     :param kwargs: k_res for the resolution of k_mod_line which defines the bandwitdh dk.
@@ -24,18 +21,17 @@ def ke_spectra(u_i, x_i, **kwargs):
     """
     if len(u_i) > 3 or len(u_i) < 1 or len(x_i) > 3 or len(x_i) < 1:
         raise ValueError('Invalid field dimensions')
-
     # Wavenumbers
     k_i = _wavenumbers(*x_i) # k_i = (kx, ky, kz)
-    # FFT to compute TKE
-    tke = 0
+    # FFT to compute KE
+    ke = 0
     for u in u_i:
         u = _window_ndim(u, signal.hanning) # Windowing
         uk = np.fft.fftn(u)/u.size # FFT
-        tke += uk*uk.conjugate() #TKE
-    tke = 0.5*tke
+        ke += uk*uk.conjugate() # KE
+    ke = 0.5*ke
     # Calc spectra
-    return _pair_integrate_fast(tke, *k_i, **kwargs)
+    return _pair_integrate_fast(ke, *k_i, **kwargs)
 
 
 def scalar_spectra(a, *args, **kwargs):
@@ -53,7 +49,7 @@ def scalar_spectra(a, *args, **kwargs):
         raise ValueError('Field dimensions must much the spatial vector components passed to the function')
 
     k_i = _wavenumbers(*args) # k_i = (kx, ky, kz)
-    # a = window_ndim(a) # Windowing
+    a = _window_ndim(a, signal.hanning) # Windowing
     ak = np.fft.fftn(a)/a.size # FFT add power spectrum??
     return _pair_integrate_fast(ak, *k_i, **kwargs) # Calc spectra
 
@@ -119,19 +115,19 @@ def _window_ndim(a, wfunction):
     """
     Performs an in-place windowing on N-dimensional spatial-domain data.
     This is done to mitigate boundary effects in the FFT.
-    :param a: Input data to be windowed, modified in place.
+    :param a: n-dimensional array input data to be windowed, modified in place.
     :param wfunction: 1D window generation function. Function should accept one argument: the window length.
            Example: scipy.signal.hamming
-    :return: windowed a
+    :return: windowed n-dimensional array a
     """
-    if a.ndim == 1:
-        return a * wfunction(len(a))
-    else:
-        axis_idxs = np.arange(len(a.shape))
-        print(axis_idxs)
-        for axis, axis_size in enumerate(a.shape):
-            window = wfunction(axis_size)
-            window = np.stack([window]*a.shape[axis-1], axis=axis_idxs[axis-1])
-            # np.power(window, (1.0/a.ndim))
-            a *= window
-        return a
+    if a.ndim == 0:
+        raise ValueError('Input data to be windowed cannot be scalar')
+    for axis, axis_size in enumerate(a.shape):
+        window = wfunction(axis_size)
+        for i in range(len(a.shape)):
+            if i == axis:
+                continue
+            else:
+                window = np.stack([window] * a.shape[i], axis=i)
+        a *= window
+    return a

@@ -4,26 +4,32 @@
 @description: Functions to plot 2D colormaps and CL-t graphs.
 @contact: b.fontgarcia@soton.ac.uk
 """
+
+
 # Imports
 import numpy as np
 import matplotlib as mpl
-# ! Uncomment for running plyplot without window display
 import matplotlib.pyplot as plt
 plt.rc('text', usetex=True )
 plt.rc('font',family = 'sans-serif',  size=10)
 mpl.rc('xtick', labelsize=10)
 mpl.rc('ytick', labelsize=10)
 mpl.rcParams['axes.linewidth'] = 0.5
+# plt.switch_backend('AGG')
+# plt.switch_backend('PS')
+plt.switch_backend('PDF')
+# plt.switch_backend('PS')
+# plt.switch_backend('SVG')
 # mpl.rcParams['mathtext.fontset'] = 'stix'
 # mpl.rcParams['font.family'] = 'STIXGeneral'
 
 # colors = ['red', 'blue', 'green', 'cyan', 'orange', 'magenta', 'black', 'yellow']
-colors = ['orange', 'cyan', 'green', 'blue', 'red', 'magenta', 'black', 'yellow']
+colors = ['black', 'orange', 'cyan', 'green', 'blue', 'red', 'magenta', 'yellow']
 # markers = ['o', 'x', 'v', '^', 's', '*']
 markers = ['s', '^', 'v', 'x', 'o', '*']
 
-# Functions
 
+# Functions
 # ------------------------------------------------------ COUNTOURS
 def plot2D(u, cmap, lvls, lim, file, **kwargs):
     """
@@ -40,11 +46,6 @@ def plot2D(u, cmap, lvls, lim, file, **kwargs):
         annotate: Boolean if annotations for min and max values of the field (and locations) are desired
     """
     # Internal imports
-    # plt.switch_backend('AGG')
-    # plt.switch_backend('PS')
-    plt.switch_backend('PDF')
-    # plt.switch_backend('PS')
-    # plt.switch_backend('SVG')
     import matplotlib.colors as colors
     from mpl_toolkits.axes_grid1 import make_axes_locatable
 
@@ -71,8 +72,6 @@ def plot2D(u, cmap, lvls, lim, file, **kwargs):
     # Matplotlib definitions
     fig1 = plt.gcf()
     ax = plt.gca()
-    # plt.rcParams['text.usetex'] = False  # Set TeX interpreter
-    # mpl.rc('font', family='DejaVu Sans')
 
     # Create contourf given a normalized (norm) colormap (cmap)
     norm = colors.Normalize(vmin=lim[0], vmax=lim[1])
@@ -129,9 +128,6 @@ def plot2Dvort(u, cmap, lvls, lim, file, **kwargs):
         annotate: Boolean if annotations for min and max values of the field (and locations) are desired
     """
     # Internal imports
-    plt.switch_backend('PDF')
-    # plt.switch_backend('SVG')
-    # plt.switch_backend('PS')
     import matplotlib.colors as colors
     from mpl_toolkits.axes_grid1 import make_axes_locatable
     plt.rc('font', family='sans-serif', size=6)
@@ -161,8 +157,6 @@ def plot2Dvort(u, cmap, lvls, lim, file, **kwargs):
     # Matplotlib definitions
     fig1 = plt.gcf()
     ax = plt.gca()
-    # plt.rcParams['text.usetex'] = False  # Set TeX interpreter
-    # mpl.rc('font', family='DejaVu Sans')
 
     # Create contourf given a normalized (norm) colormap (cmap)
     norm = colors.Normalize(vmin=lim[0], vmax=lim[1])
@@ -188,9 +182,15 @@ def plot2Dvort(u, cmap, lvls, lim, file, **kwargs):
 
 # ------------------------------------------------------ CL-t
 def plotCL(fy, t, file, **kwargs):
-    plt.switch_backend('PDF')
-
-    plt.rcParams['text.usetex'] = True  # Set TeX interpreter
+    """
+    Plot the lift force as a time series.
+    :param fy: Lift force [numpy 1D array]
+    :param t: Time [numpy 1D array]
+    :param file: output file name [string]
+    :param kwargs: Select which additional information you want to include in the plot: 'St', 'CL_rms', 'CD_rms', 'n_periods',
+        passing the corresponding values. E.g. 'St=0.2'.
+    :return: -
+    """
     ax = plt.gca()
     fig = plt.gcf()
 
@@ -237,11 +237,12 @@ def plotCL(fy, t, file, **kwargs):
 # ------------------------------------------------------ TKE
 def plotTKEspatial(tke, file, **kwargs):
     """
-    Generate a plot of the TKE in space
+    1D plot of the TKE in space
+    :param tke: Turbulent kinetic energy [numpy 1D array]
+    :param file: output file name [string]
+    :param kwargs: 'x' coordinates [numpy 1D array]
+    :return: -
     """
-    # Basic definitions
-    plt.switch_backend('PDF')
-    plt.rcParams['text.usetex'] = True  # Set TeX interpreter
     ax = plt.gca()
     fig  = plt.gcf()
 
@@ -281,13 +282,15 @@ def plotTKEspatial(tke, file, **kwargs):
 
 def plotTKEspatial_list(file, tke_tuple_list, **kwargs):
     """
-    Generate a plot of a TKE list of tuple like ('case', tke) in space
+    Generate a plot of a TKE list of tuples like (case, tke) in space
+    :param file: output file name [string]
+    :param tke_tuple_list: list containing the tuple as ('case', tke), where 'case' is a string and 'tke' is a 1D numpy array
+    :param kwargs: 'x' coordinates [numpy 1D array]
+    :return: -
     """
-    # Basic definitions
-    plt.switch_backend('PDF')
-    plt.rcParams['text.usetex'] = True  # Set TeX interpreter
     ax = plt.gca()
     fig  = plt.gcf()
+
     if not tke_tuple_list:
         raise ValueError("No TKE series passed to the function.")
     else:
@@ -350,11 +353,13 @@ def plotTKEspatial_list(file, tke_tuple_list, **kwargs):
 # ------------------------------------------------------ x-y
 def plotXYSpatial(y, label, file, **kwargs):
     """
-    Generate a plot of the TKE in space
+    Generate a x-y plot in space
+    :param y: series to plot [1D numpy array]
+    :param label: y axis label [string]
+    :param file: output file name
+    :param kwargs: 'x' coordinates [numpy 1D array], 'xD_min' left x limit, 'ylog' log plot [boolean]
+    :return: -
     """
-    # Basic definitions
-    plt.switch_backend('PDF')
-    plt.rcParams['text.usetex'] = True  # Set TeX interpreter
     ax = plt.gca()
     fig  = plt.gcf()
 
@@ -396,11 +401,15 @@ def plotXYSpatial(y, label, file, **kwargs):
 
 def plotXYSpatial_list(file, y_tuple_list, **kwargs):
     """
+    Generate a x-y plot in space of multiples y series
+    :param file: output file name
+    :param y_tuple_list: list of tuples as (case, y) where 'case' is the name of the case [string] and 'y' the series [1D numpy array]
+    :param kwargs: 'x' coordinates [numpy 1D array], 'xD_min' left x limit, 'ylog' log plot [boolean]
+    :return: -
+    """
+    """
     Generate a XY plot
     """
-    # Basic definitions
-    plt.switch_backend('PDF')
-    plt.rcParams['text.usetex'] = True  # Set TeX interpreter
     ax = plt.gca()
     fig  = plt.gcf()
 
@@ -466,14 +475,57 @@ def plotXYSpatial_list(file, y_tuple_list, **kwargs):
     plt.clf()
     return
 
+def velocity_profiles(file, profiles_tuple_list, y_list, **kwargs):
+    """
+    Similar to plotXYSpatial_list just for a specific test case
+    """
+    ax = plt.gca()
+    fig  = plt.gcf()
+
+    ylog = kwargs.get('ylog', False)
+    ylabel = '$' + kwargs.get('ylabel','y') + '$'
+
+    # Show lines
+    profiles = []
+    for i, profile_tuple in enumerate(profiles_tuple_list):
+        label = profile_tuple[0]
+        profile = profile_tuple[1]
+        y = y_list[i]
+        label = '$'+label+'$'
+        color = colors[i]
+        # plt.plot(profile, y, color=color, lw=1, label=label, marker=markers[i], markevery=10, markersize=4)
+        plt.plot(profile, y, color=color, lw=1, label=label)
+        profiles.append(profile)
+
+    # Edit figure, axis, limits
+    # ax.set_xlim(min(x), max(x))
+
+    fig, ax = makeSquare(fig,ax)
+
+    # Edit frame, labels and legend
+    plt.xlabel(r'$\overline{u}$')
+    plt.ylabel(ylabel, rotation=0)
+    ax.set_ylim(np.min([np.min(y) for y in y_list]), np.max([np.max(y) for y in y_list]))
+
+
+    leg = plt.legend(loc='upper left')
+    leg.get_frame().set_edgecolor('white')
+    leg.get_frame().set_facecolor('white')
+    leg.get_frame().set_linewidth(0)
+    leg.get_frame().set_alpha(0)
+
+    ax.tick_params(bottom="on", top="on", right="on", which='both', direction='in', length=2)
+
+    # Show plot and save figure
+    plt.show()
+    plt.savefig(file, transparent=True, bbox_inches='tight')
+    plt.clf()
+    return
 
 def plotCp_list(file, y_tuple_list, x_list, **kwargs):
     """
-    Generate a XY plot
+    Similar to plotXYSpatial_list just for a specific test case
     """
-    # Basic definitions
-    plt.switch_backend('PS')
-    plt.rcParams['text.usetex'] = True  # Set TeX interpreter
     ax = plt.gca()
     fig  = plt.gcf()
 
@@ -523,13 +575,14 @@ def plotCp_list(file, y_tuple_list, x_list, **kwargs):
 
 
 # ------------------------------------------------------ LogLog Spatial
-def plotLogLogSpatialSpectra(wn, uk, file):
+def plotLogLogSpatialSpectra(file, wn, uk):
     """
-    Generate a loglog plot of a time spectra series using the matplotlib library given the arguments
+    Generate a loglog plot of a 1D spatial signal
+    :param file: output file name
+    :param wn: frequency [1D numpy array]
+    :param uk: transformed u: uk = FFT(u). [1D numpy array]
+    :return: -
     """
-    # Basic definitions
-    plt.switch_backend('PDF')
-    plt.rcParams['text.usetex'] = True  # Set TeX interpreter
     ax = plt.gca()
     fig  = plt.gcf()
 
@@ -562,24 +615,26 @@ def plotLogLogSpatialSpectra(wn, uk, file):
     return
 
 
-def plotLogLogSpatialSpectra_list(file, tke_tuple_list, wn_list):
+def plotLogLogSpatialSpectra_list(file, uk_tuple_list, wn_list):
     """
-    Generate a loglog plot of a time spectra series using the matplotlib library given the arguments
+    Generate a loglog plot of a list of 1D spatial signals
+    :param file: output file name
+    :param tke_tuple_list: list of tuples as (case, uk), where 'case' is the case name [string] and 'uk' is
+        the transformed u: uk = FFT(u). [1D numpy array]
+    :param wn_list: list of frequencies for the different cases
+    :return: -
     """
-    # Basic definitions
-    plt.switch_backend('PDF')
-    plt.rcParams['text.usetex'] = True  # Set TeX interpreter
     ax = plt.gca()
     fig  = plt.gcf()
 
     # Show lines
-    for i, tke_tuple in enumerate(tke_tuple_list):
-        label = tke_tuple[0]
+    for i, uk_tuple in enumerate(uk_tuple_list):
+        label = uk_tuple[0]
         if 'piD' in label: label = '\pi D'
-        tke = tke_tuple[1]
+        uk = uk_tuple[1]
         label = '$'+label+'$'
         color = colors[i]
-        plt.loglog(wn_list[i], tke, color=color, lw=0.5, label=label)
+        plt.loglog(wn_list[i], uk, color=color, lw=0.5, label=label)
 
     # x, y = loglogLine(p2=(3,1e-4), p1x=1e-2, m=-5/3)
     # plt.loglog(x, y, color='black', lw=1, ls='dotted')
@@ -623,11 +678,12 @@ def plotLogLogSpatialSpectra_list(file, tke_tuple_list, wn_list):
 # ------------------------------------------------------ LogLog Time
 def plotLogLogTimeSpectra(freqs, uk, file):
     """
-    Generate a loglog plot of a time spectra series using the matplotlib library given the arguments
+    Generate a loglog plot of a time spectra series
+    :param freqs: frequency [1D numpy array]
+    :param uk: power signal of the time series u [1D numpy array]
+    :param file: output file name
+    :return: -
     """
-    # Basic definitions
-    plt.switch_backend('PDF')
-    plt.rcParams['text.usetex'] = True  # Set TeX interpreter
     ax = plt.gca()
     fig  = plt.gcf()
 
@@ -664,11 +720,13 @@ def plotLogLogTimeSpectra(freqs, uk, file):
 
 def plotLogLogTimeSpectra_list(file, uk_tuple_list, freqs_list):
     """
-    Generate a loglog plot of a time spectra series using the matplotlib library given the arguments
+    Generate a loglog plot of a list of time spectra series
+    :param file: output file name
+    :param uk_tuple_list: list of tuples as (case, uk), where 'case' is the case name [string] and 'uk' is
+        power signal of the time series u [1D numpy array]
+    :param freqs_list: list containing the frequencies [1D numpy array] for each case
+    :return: -
     """
-    # Basic definitions
-    plt.switch_backend('PDF')
-    plt.rcParams['text.usetex'] = True  # Set TeX interpreter
     ax = plt.gca()
     fig  = plt.gcf()
 
@@ -721,11 +779,8 @@ def plotLogLogTimeSpectra_list(file, uk_tuple_list, freqs_list):
 
 def plotLogLogTimeSpectra_list_cascade(file, uk_tuple_list, freqs_list):
     """
-    Generate a loglog plot of a time spectra series using the matplotlib library given the arguments
+    Same as 'plotLogLogTimeSpectra_list' but the spectras are separated a factor of 10 among them for visualization purposes
     """
-    # Basic definitions
-    plt.switch_backend('PDF')
-    plt.rcParams['text.usetex'] = True  # Set TeX interpreter
     ax = plt.gca()
     fig  = plt.gcf()
 
@@ -762,6 +817,56 @@ def plotLogLogTimeSpectra_list_cascade(file, uk_tuple_list, freqs_list):
     # Edit frame, labels and legend
     ax.tick_params(bottom="on", top="on", which='both', direction='in')
     plt.xlabel(r'$f/UD$')
+    plt.ylabel(r'$\mathrm{PS}\left(v\right)$')
+    leg = plt.legend(loc='lower left')
+    leg.get_frame().set_edgecolor('white')
+    # ax.get_yaxis().set_ticks([], minor=True)
+
+    # Show plot and save figure
+    plt.show()
+    plt.savefig(file, transparent=True, bbox_inches='tight')
+    return
+
+def plotLogLogSpatialSpectra_list_cascade(file, uk_tuple_list, freqs_list):
+    """
+    Same as 'plotLogLogSpatialSpectra_list' but the spectras are separated a factor of 10 among them for visualization purposes
+    """
+    ax = plt.gca()
+    fig  = plt.gcf()
+
+    for i, uk_tup in enumerate(uk_tuple_list):
+        uk = uk_tup[1] * 10 ** (-i)
+        uk_tuple_list[i] = (uk_tuple_list[i][0], uk)
+
+    # Show lines
+    for i, uk_tuple in enumerate(uk_tuple_list):
+        label = uk_tuple[0]
+        print(label)
+        if 'pi' in label: label = '\pi'
+        if '2D' in label: label = '2\mathrm{D}'
+        uk = uk_tuple[1]
+        label = '$'+label+'$'
+        color = colors[i]
+        plt.loglog(freqs_list[i], uk, color=color, lw=0.8, label=label)
+
+
+    for i in np.arange(5):
+        x, y = loglogLine(p2=(1e3, 1e-10*10**i), p1x=1e-2, m=-5/3)
+        plt.loglog(x, y, color='black', lw=0.5, ls='dotted', alpha=0.3)
+        x, y = loglogLine(p2=(1e3, 1e-13*10**i), p1x=1e-2, m=-3)
+        plt.loglog(x, y, color='black', lw=0.5, ls='dashdot', alpha=0.3)
+
+    # Set limits
+    # ax.set_xlim(2e0, 3e2) # Window
+    ax.set_xlim(2e0, 5e2) # Window
+    ax.set_ylim(1e-15, 1e-1)
+    # ax.set_ylim(1e-11, 1e4)
+
+    fig, ax = makeSquare(fig,ax)
+
+    # Edit frame, labels and legend
+    ax.tick_params(bottom="on", top="on", which='both', direction='in')
+    plt.xlabel(r'$\kappa D$')
     leg = plt.legend(loc='lower left')
     leg.get_frame().set_edgecolor('white')
     ax.get_yaxis().set_ticks([])
@@ -771,14 +876,16 @@ def plotLogLogTimeSpectra_list_cascade(file, uk_tuple_list, freqs_list):
     plt.savefig(file, transparent=True, bbox_inches='tight')
     return
 
+
 # ------------------------------------------------------ Lumley's Triangle
 def plotLumleysTriangle(eta, xi, file):
     """
-    Generate a plot of the Reynolds stresses anisotropy tensor in space
+    Generate a plot of the Reynolds stresses anisotropy tensor in the form of the Lumley's triangle
+    :param eta: Invariant of the anisotropy tensor (displayed on the vertical axis) [1D array of points in space, i.e. y triangle coordinates]
+    :param xi: Invariant of the anisotropy tensor (displayed on the horizontal axis) [1D array of points in space, i.e. x triangle coordinates]
+    :param file: output file name
+    :return: -
     """
-    # Basic definitions
-    plt.switch_backend('PDF')
-    plt.rcParams['text.usetex'] = True  # Set TeX interpreter
     ax = plt.gca()
     fig  = plt.gcf()
 
@@ -810,11 +917,12 @@ def plotLumleysTriangle(eta, xi, file):
 
 def plotLumleysTriangle_list(file, eta_tuple_list, xi_tuple_list):
     """
-    Generate a plot of the Reynolds stresses anisotropy tensor in space
+    Generate a plot of the Reynolds stresses anisotropy tensor in the form of the Lumley's triangle for different cases
+    :param file: output file name
+    :param eta_tuple_list: list of tuples as (case, eta) for the 'eta' invariant
+    :param xi_tuple_list: list of tuples as (case, xi) for the 'xi' invariant
+    :return:
     """
-    # Basic definitions
-    plt.switch_backend('PDF')
-    plt.rcParams['text.usetex'] = True  # Set TeX interpreter
     ax = plt.gca()
     fig  = plt.gcf()
 
@@ -860,44 +968,43 @@ def plotLumleysTriangle_list(file, eta_tuple_list, xi_tuple_list):
     plt.savefig(file, transparent=True, bbox_inches='tight')
     return
 
+
 # ------------------------------------------------------ GC plots
-def error_order(file, x, y):
-    """
-    Generate a loglog plot of a time spectra series using the matplotlib library given the arguments
-    """
-    # Basic definitions
-    plt.switch_backend('PDF')
-    plt.rcParams['text.usetex'] = True  # Set TeX interpreter
-    ax = plt.gca()
-    fig  = plt.gcf()
-
-    plt.loglog(x, y, color='b', lw=0.5)
-
-    x, y = loglogLine(p2=(np.max(x), np.max(y)), p1x=np.min(x), m=2)
-    plt.loglog(x, y, color='black', lw=1, ls='dotted')
-    x, y = loglogLine(p2=(np.max(x), np.max(y)), p1x=np.min(x), m=1)
-    plt.loglog(x, y, color='black', lw=1, ls='dotted')
-    # x, y = loglogLine(p2=(1.2e2, 1e-9), p1x=1e-2, m=-3)
-    # plt.loglog(x, y, color='black', lw=1, ls='dashdot')
-    # x, y = loglogLine(p2=(1e0, 1e-8), p1x=1e-3, m=-11/3)
-    # plt.loglog(x, y, color='black', lw=1, ls='dashed')
-
-    # Set limits
-    # ax.set_xlim(np.min(freqs_list[0]), 2e-1)
-    # ax.set_ylim(1e-8, 1e-1)
-    # ax.set_xlim(1e-2, 1e2) # Window
-    # ax.set_ylim(1e-11, 1e-1)
-
-    # fig, ax = makeSquare(fig,ax)
-    # ax.xaxis.set_tick_params(labeltop='on')
-    # ax.tick_params(bottom="on", top="on", which='both')
-
-    # Edit frame, labels and legend
-
-    # Show plot and save figure
-    plt.show()
-    plt.savefig(file, transparent=True, bbox_inches='tight')
-    return
+# def error_order(file, x, y):
+#     """
+#     Generate a loglog plot of a time spectra series using the matplotlib library given the arguments
+#     """
+#     # Basic definitions
+#     ax = plt.gca()
+#     fig  = plt.gcf()
+#
+#     plt.loglog(x, y, color='b', lw=0.5)
+#
+#     x, y = loglogLine(p2=(np.max(x), np.max(y)), p1x=np.min(x), m=2)
+#     plt.loglog(x, y, color='black', lw=1, ls='dotted')
+#     x, y = loglogLine(p2=(np.max(x), np.max(y)), p1x=np.min(x), m=1)
+#     plt.loglog(x, y, color='black', lw=1, ls='dotted')
+#     # x, y = loglogLine(p2=(1.2e2, 1e-9), p1x=1e-2, m=-3)
+#     # plt.loglog(x, y, color='black', lw=1, ls='dashdot')
+#     # x, y = loglogLine(p2=(1e0, 1e-8), p1x=1e-3, m=-11/3)
+#     # plt.loglog(x, y, color='black', lw=1, ls='dashed')
+#
+#     # Set limits
+#     # ax.set_xlim(np.min(freqs_list[0]), 2e-1)
+#     # ax.set_ylim(1e-8, 1e-1)
+#     # ax.set_xlim(1e-2, 1e2) # Window
+#     # ax.set_ylim(1e-11, 1e-1)
+#
+#     # fig, ax = makeSquare(fig,ax)
+#     # ax.xaxis.set_tick_params(labeltop='on')
+#     # ax.tick_params(bottom="on", top="on", which='both')
+#
+#     # Edit frame, labels and legend
+#
+#     # Show plot and save figure
+#     plt.show()
+#     plt.savefig(file, transparent=True, bbox_inches='tight')
+#     return
 
 
 # ------------------------------------------------------ Utils
