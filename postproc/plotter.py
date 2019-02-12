@@ -11,9 +11,9 @@ import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 plt.rc('text', usetex=True )
-plt.rc('font',family = 'sans-serif',  size=10)
-mpl.rc('xtick', labelsize=10)
-mpl.rc('ytick', labelsize=10)
+plt.rc('font',family = 'sans-serif',  size=13)
+mpl.rc('xtick', labelsize=13)
+mpl.rc('ytick', labelsize=13)
 mpl.rcParams['axes.linewidth'] = 0.5
 # plt.switch_backend('AGG')
 # plt.switch_backend('PS')
@@ -23,15 +23,93 @@ plt.switch_backend('PDF')
 # mpl.rcParams['mathtext.fontset'] = 'stix'
 # mpl.rcParams['font.family'] = 'STIXGeneral'
 
-# colors = ['red', 'blue', 'green', 'cyan', 'orange', 'magenta', 'black', 'yellow']
 colors = ['black', 'orange', 'cyan', 'green', 'blue', 'red', 'magenta', 'yellow']
-# markers = ['o', 'x', 'v', '^', 's', '*']
-markers = ['s', '^', 'v', 'x', 'o', '*']
+# colors = ['orange', 'cyan', 'green', 'blue', 'red', 'magenta', 'yellow']
+markers = ['|', 's', '^', 'v', 'x', 'o', '*']
+# markers = ['s', '^', 'v', 'x', 'o', '*']
 
 
 # Functions
 # ------------------------------------------------------ COUNTOURS
 def plot2D(u, cmap, lvls, lim, file, **kwargs):
+    """
+    Return nothing and saves the figure in the specified file name.
+    Args:
+        cmap: matplotlib cmap. Eg: cmap = "seismic"
+        lvls: number of levels of the contour. Eg: lvls = 100
+        lim:  min and max values of the contour passed as array. Eg: lim = [-0.5, 0.5]
+        file: Name of the file to save the plot (recommended .pdf so it can be converted get .svg).
+              Eg: file = "dUdy.pdf"
+    Kwargs:
+        x=[xmin,xmax] is the x axis minimum and maximum specified
+        y=[ymin,ymax] is the y axis minimum and maximum specified
+        annotate: Boolean if annotations for min and max values of the field (and locations) are desired
+    """
+    # Internal imports
+    import matplotlib.colors as colors
+    from mpl_toolkits.axes_grid1 import make_axes_locatable
+
+    N, M = u.shape[0], u.shape[1]
+    if not 'x' in kwargs:
+        xmin, xmax = 0, N-1
+    else:
+        xmin, xmax = kwargs['x'][0], kwargs['x'][1]
+    if not 'y' in kwargs:
+        ymin, ymax = -M/2, M/2-1
+    else:
+        ymin, ymax = kwargs['y'][0], kwargs['y'][1]
+    annotate = kwargs.get('annotate', False)
+    scaling = kwargs.get('scaling', 1)
+    xshift = kwargs.get('xshift', 0)
+    yshift = kwargs.get('yshift', 0)
+
+    # Uniform grid generation
+    x, y = np.linspace(xmin/scaling, xmax/scaling, N), np.linspace(ymin/scaling, ymax/scaling, M)
+    x, y = x+xshift, y+yshift
+    x, y = np.meshgrid(x, y)
+    u = np.transpose(u)
+
+    # Matplotlib definitions
+    fig1 = plt.gcf()
+    ax = plt.gca()
+
+    # Create contourf given a normalized (norm) colormap (cmap)
+    norm = colors.Normalize(vmin=lim[0], vmax=lim[1])
+    # ax.contour(x, y, u, lvls, linewidths=0.2, colors='k')
+    cf = ax.contourf(x, y, u, lvls, vmin=lim[0], vmax=lim[1], norm=norm, cmap=cmap)
+
+    ax.tick_params(bottom="on", top="on", right="on", which='both', direction='in', length=2)
+
+    # Scale contourf and set limits
+    plt.axis('scaled')
+    plt.xlim(np.min(x), np.max(x))
+    plt.ylim(np.min(y), np.max(y))
+
+    # Scale colorbar to contourf
+    divider = make_axes_locatable(ax)
+    cax = divider.append_axes("right", size="5%", pad=0.02, aspect=10)
+    cbax = plt.colorbar(cf, cax=cax).ax
+    mpl.colorbar.ColorbarBase(cbax, norm=norm, cmap=cmap)
+
+    # Add annotation if desired
+    if annotate:
+        str_annotation = max_min_loc(u, xmin, ymin)
+        print(str_annotation)
+        ann_ax = fig1.add_subplot(133)
+        ann_ax.axis('off')
+        ann_ax.annotate(str_annotation, (0, 0),
+                        xycoords="axes fraction", va="center", ha="center",
+                        bbox=dict(boxstyle="round, pad=1", fc="w"))
+
+    # Show, save and close figure
+    plt.savefig(file, transparent=True, bbox_inches='tight')
+    plt.draw()
+    plt.show()
+    plt.clf()
+    return
+
+
+def plot2D_uv(u, cmap, lvls, lim, file, **kwargs):
     """
     Return nothing and saves the figure in the specified file name.
     Args:
@@ -112,6 +190,7 @@ def plot2D(u, cmap, lvls, lim, file, **kwargs):
     plt.show()
     # plt.clf()
     return
+
 
 def plot2Dvort(u, cmap, lvls, lim, file, **kwargs):
     """
@@ -323,8 +402,9 @@ def plotTKEspatial_list(file, tke_tuple_list, **kwargs):
     # Set limits
     ylims = kwargs.get('ylims', [np.min(tke_list),  np.max(tke_list)])
     print(ylims)
-    ax.set_xlim(min(x), max(x))
+    ax.set_xlim(min(x), 12)
     ax.set_ylim(ylims[0], ylims[1])
+    ax.xaxis.set_ticks([0,2,4,6,8,10,12])
 
     fig, ax = makeSquare(fig,ax)
 
@@ -334,19 +414,22 @@ def plotTKEspatial_list(file, tke_tuple_list, **kwargs):
         plt.minorticks_off()
 
     # Edit frame, labels and legend
-    plt.xlabel('$x/D$')
+    plt.xlabel('$x$')
     plt.ylabel(ylabel)
-    leg = plt.legend(loc='lower center')
-    leg.get_frame().set_edgecolor('white')
+    # leg = plt.legend(loc=(0.75,0.16))
+    leg = plt.legend(loc='lower right')
+
+    leg.get_frame().set_edgecolor('black')
     leg.get_frame().set_facecolor('white')
-    leg.get_frame().set_linewidth(0)
-    leg.get_frame().set_alpha(0)
+    leg.get_frame().set_linewidth(0.5)
+    leg.get_frame().set_alpha(0.5)
     # ax.yaxis.set_ticks([-2, 0, 2])
     ax.tick_params(bottom="on", top="on", right="on", which='both', direction='in', length=2)
 
     # Show plot and save figure
     plt.show()
     plt.savefig(file, transparent=True, bbox_inches='tight')
+    plt.clf()
     return
 
 
@@ -398,6 +481,44 @@ def plotXYSpatial(y, label, file, **kwargs):
     plt.savefig(file, transparent=True, bbox_inches='tight')
     return
 
+def plotScatter(x, y, cases, file):
+    """
+    Generate a x-y plot in space
+    :param x: series to plot [1D numpy array]
+    :param y: series to plot [1D numpy array]
+    :param label: y axis label [string]
+    :param file: output file name
+    :return: -
+    """
+    ax = plt.gca()
+    fig  = plt.gcf()
+
+    # Show lines
+    for i, case in enumerate(cases):
+        ax.scatter(x[i], y[i], c=colors[i], marker=markers[i], s=10, linewidths=1, label=case)
+
+
+    # Edit figure, axis, limits
+    ax.set_xlim(0.06, 0.15)
+    ax.set_ylim(0.1, 1.4)
+
+    ax.tick_params(bottom="on", top="on", right="on", which='both', direction='in', length=2)
+    fig, ax = makeSquare(fig,ax)
+
+    # Edit frame, labels and legend
+    plt.xlabel('$\mathrm{max}(TKE|_{y})$')
+    plt.ylabel('$\overline{C}_L$')
+    leg = plt.legend(loc='lower right')
+    leg.get_frame().set_edgecolor('black')
+    leg.get_frame().set_facecolor('white')
+    leg.get_frame().set_linewidth(0.5)
+    leg.get_frame().set_alpha(0.5)
+
+    # Show plot and save figure
+    plt.show()
+    plt.savefig(file, transparent=True, bbox_inches='tight')
+    return
+
 
 def plotXYSpatial_list(file, y_tuple_list, **kwargs):
     """
@@ -440,7 +561,8 @@ def plotXYSpatial_list(file, y_tuple_list, **kwargs):
             x = x[x > kwargs['xD_min']]
             y = y[-x.size:]
 
-        plt.plot(x, y, color=color, lw=1, label=label, marker=markers[i], markevery=50, markersize=4)
+        plt.plot(x, y, color=color, lw=1, label=label, marker=markers[i],
+                 markevery=50, markersize=4)#, markeredgecolor = 'black', markeredgewidth=0.1)
         y_list.append(y)
         i += 1
 
@@ -462,10 +584,13 @@ def plotXYSpatial_list(file, y_tuple_list, **kwargs):
     else:
         leg = plt.legend(loc='upper right')
 
-    leg.get_frame().set_edgecolor('white')
+    leg.get_frame().set_edgecolor('black')
     leg.get_frame().set_facecolor('white')
-    leg.get_frame().set_linewidth(0)
-    leg.get_frame().set_alpha(0)
+    leg.get_frame().set_linewidth(0.5)
+    leg.get_frame().set_alpha(0.5)
+    # ax.set_xlim(min(x), 12)
+    # ax.set_ylim(ylims[0], ylims[1])
+    ax.xaxis.set_ticks([2, 4, 6, 8, 10, 12])
 
     ax.tick_params(bottom="on", top="on", right="on", which='both', direction='in', length=2)
 
@@ -808,7 +933,7 @@ def plotLogLogTimeSpectra_list_cascade(file, uk_tuple_list, freqs_list):
 
     # Set limits
     ax.set_xlim(1e-2, 7e1) # Window
-    ax.set_ylim(1e-16, 1e-1)
+    ax.set_ylim(9e-16, 1e-1)
     # ax.set_ylim(1e-11, 1e4)
 
 
@@ -819,12 +944,18 @@ def plotLogLogTimeSpectra_list_cascade(file, uk_tuple_list, freqs_list):
     plt.xlabel(r'$f/UD$')
     plt.ylabel(r'$\mathrm{PS}\left(v\right)$')
     leg = plt.legend(loc='lower left')
-    leg.get_frame().set_edgecolor('white')
+    leg.get_frame().set_edgecolor('black')
+    leg.get_frame().set_facecolor('white')
+    leg.get_frame().set_linewidth(0.5)
+    leg.get_frame().set_alpha(0.5)
+    # ax.yaxis.set_ticks([-2, 0, 2])
+    ax.tick_params(bottom="on", top="on", right="on", which='both', direction='in', length=2)
     # ax.get_yaxis().set_ticks([], minor=True)
 
     # Show plot and save figure
     plt.show()
     plt.savefig(file, transparent=True, bbox_inches='tight')
+    plt.clf()
     return
 
 def plotLogLogSpatialSpectra_list_cascade(file, uk_tuple_list, freqs_list):
@@ -908,7 +1039,10 @@ def plotLumleysTriangle(eta, xi, file):
     plt.xlabel(r'$\eta$')
     plt.ylabel(r'$\xi$')
     leg = plt.legend(loc='upper left')
-    leg.get_frame().set_edgecolor('white')
+    leg.get_frame().set_edgecolor('black')
+    leg.get_frame().set_facecolor('white')
+    leg.get_frame().set_linewidth(0.5)
+    leg.get_frame().set_alpha(0.5)
 
     # Show plot and save figure
     plt.show()
@@ -943,7 +1077,7 @@ def plotLumleysTriangle_list(file, eta_tuple_list, xi_tuple_list):
         eta = eta[1]
         xi = xi_tuple_list[i][1]
         label = '$'+label+'$'
-        plt.scatter(xi, eta, marker=markers[i], c=colors[i], s=6, linewidths=0.1, label=label)
+        plt.scatter(xi, eta, marker=markers[i], c=colors[i], s=10, linewidths=0.1, label=label, edgecolor = 'black')
         i += 1
 
     # Set limits
@@ -955,13 +1089,15 @@ def plotLumleysTriangle_list(file, eta_tuple_list, xi_tuple_list):
     # Edit frame, labels and legend
     plt.xlabel(r'$\xi$')
     plt.ylabel('$ \eta $', rotation=0)
-    leg = plt.legend(loc='lower right', fontsize=10)
-    leg.get_frame().set_edgecolor('white')
+    leg = plt.legend(loc='lower right')
+    leg.get_frame().set_edgecolor('black')
     leg.get_frame().set_facecolor('white')
-    leg.get_frame().set_linewidth(0)
-    leg.get_frame().set_alpha(0)
-    # ax.yaxis.set_ticks([-2, 0, 2])
+    leg.get_frame().set_linewidth(0.5)
+    leg.get_frame().set_alpha(0.5)
+    ax.xaxis.set_ticks([-0.2,-0.1,0,0.1,0.2,0.3,0.4])
     ax.tick_params( direction='in', length=2)
+    ax.tick_params(bottom="on", top="on", right='on',which='both', direction='in')
+    # plt.minorticks_off()
 
     # Show plot and save figure
     plt.show()
