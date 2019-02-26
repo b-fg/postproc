@@ -199,7 +199,10 @@ def read_and_write_fractioned_mean_data(f_w_list, shape, **kwargs):
         b_mean = b_mean.astype(np.float64, copy=False)
         c_mean = c_mean.astype(np.float64, copy=False)
         r_mean = np.stack((a_mean, b_mean, c_mean), axis=-1)
-        r_mean.tofile(file[:-4] + '_python_mean.dat')
+
+        f_root = '/'.join(file.split('/')[0:-3])+'/'
+        f_name = file.split('/')[-1][:-4]
+        r_mean.tofile(f_root + 'output/' +f_name + '_python_mean.dat')
         return
     else:
          raise ValueError("Number of components is not <=3")
