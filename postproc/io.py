@@ -7,6 +7,7 @@
 """
 # Imports
 import numpy as np
+import vtk
 
 
 # Functions
@@ -268,3 +269,43 @@ def readPressureArcLength(file):
 def importExpCpTheta(file):
     theta, cp = np.loadtxt(file, unpack=True, delimiter=',')
     return theta, cp
+
+def read_vtk(fname):
+    print('Reading data...')
+    reader = vtk.vtkXMLPImageDataReader()
+    reader.SetFileName(fname)
+    reader.Update()
+    data = reader.GetOutput()
+
+    sh = data.GetDimensions()
+    ndims = len(sh)
+    bounds = data.GetBounds()  # (Xmin,Xmax,Ymin,Ymax,Zmin,Zmax)
+    # nPoints = data.GetNumberOfPoints()
+    (xmin, xmax, ymin, ymax, zmin, zmax) = data.GetBounds()  # (Xmin,Xmax,Ymin,Ymax,Zmin,Zmax)
+    grid3D = np.mgrid[zmin:zmax + 1, ymin:ymax + 1, xmin:xmax + 1]
+    pointData = data.GetPointData()
+
+    # get vector field
+    v = np.array(pointData.GetVectors("Velocity")).reshape(sh + (ndims,), order='F')
+    vec = []
+    for d in range(ndims):
+        a = v[..., d]
+        vec.append(a)
+    # get scalar field
+    sca = np.array(pointData.GetScalars('Pressure')).reshape(sh, order='F')
+
+    return np.array(vec), sca, grid3D
+
+
+def pvd_parser(fname):
+    times = []
+    files = []
+    with open(fname) as f:
+        lines = f.readlines()
+
+    for line in lines[2:-2]:
+        l = line.split(" ")
+        times.append(float(l[1].split("\"")[1]))
+        files.append(str(l[4].split("\"")[1]))
+
+    return times, files

@@ -23,9 +23,9 @@ mpl.rc('ytick', labelsize=13)
 plt.rcParams['animation.ffmpeg_path'] = r"/usr/bin/ffmpeg"
 mpl.rcParams['axes.linewidth'] = 0.5
 
-# plt.switch_backend('AGG')
+plt.switch_backend('AGG')
 # plt.switch_backend('PS')
-plt.switch_backend('PDF')
+# plt.switch_backend('PDF')
 # plt.switch_backend('PS')
 # plt.switch_backend('SVG')
 
@@ -313,6 +313,76 @@ def plot2Dvort(u, cmap, lvls, lim, file, **kwargs):
     # ax.xaxis.set_ticks(np.arange(0.5, 2.5, 0.5))
     ax.yaxis.set_ticks([-2,0,2])
     ax.tick_params(bottom="on", top="on", right="on", which='both', direction='in', length=2)
+
+    # Show, save and close figure
+    plt.show()
+    plt.savefig(file, transparent=True, bbox_inches='tight')
+    # plt.draw()
+    # plt.clf()
+    return
+
+def plot2Dseparation(u, cmap, lvls, lim, file, **kwargs):
+    """
+    Return nothing and saves the figure in the specified file name.
+    Args:
+        cmap: matplotlib cmap. Eg: cmap = "seismic"
+        lvls: number of levels of the contour. Eg: lvls = 100
+        lim:  min and max values of the contour passed as array. Eg: lim = [-0.5, 0.5]
+        file: Name of the file to save the plot (recommended .pdf so it can be converted get .svg).
+              Eg: file = "dUdy.pdf"
+    Kwargs:
+        x=[xmin,xmax] is the x axis minimum and maximum specified
+        y=[ymin,ymax] is the y axis minimum and maximum specified
+        annotate: Boolean if annotations for min and max values of the field (and locations) are desired
+    """
+    # Internal imports
+    import matplotlib.colors as colors
+    from mpl_toolkits.axes_grid1 import make_axes_locatable
+    plt.rc('font', family='sans-serif', size=6)
+    mpl.rc('xtick', labelsize=6)
+    mpl.rc('ytick', labelsize=6)
+
+    N, M = u.shape[0], u.shape[1]
+    scaling = kwargs.get('scaling', 1)
+    xshift = kwargs.get('xshift', 0)
+    yshift = kwargs.get('yshift', 0)
+    if not 'grid3D' in kwargs:
+        xmin, xmax = 0, N-1
+        ymin, ymax = -M / 2, M / 2 - 1
+        x, y = np.linspace(xmin / scaling, xmax / scaling, N), np.linspace(ymin / scaling, ymax / scaling, M)
+        x, y = x + xshift, y + yshift
+        x, y = np.meshgrid(x, y)
+    else:
+        grid3D = kwargs['grid3D']
+        print(grid3D.shape)
+        x, y = grid3D[2, 0]/scaling, grid3D[1, 0]/scaling
+
+    # Uniform grid generation
+    u = np.transpose(u)
+
+    # Matplotlib definitions
+    fig1 = plt.gcf()
+    ax = plt.gca()
+
+    # Create contourf given a normalized (norm) colormap (cmap)
+    norm = colors.Normalize(vmin=lim[0], vmax=lim[1])
+    # ax.contour(x, y, u, lvls, linewidths=0.2, colors='k')
+    cf = ax.contourf(x, y, u, lvls, vmin=lim[0], vmax=lim[1], norm=norm, cmap=cmap)
+
+    # Scale contourf and set limits
+    plt.axis('scaled')
+    plt.xlim(np.min(x), np.max(x))
+    plt.ylim(np.min(y), np.max(y))
+
+    # ax.xaxis.set_ticks(np.arange(0.5, 2.5, 0.5))
+    ax.xaxis.set_ticks([0., 0.5, 1.0, 1.5])
+    ax.yaxis.set_ticks([-0.5, 0.0, 0.5])
+    ax.tick_params(bottom="on", top="on", right="on", which='both', direction='in', length=2)
+
+    # Add cylinder
+    grey_color = '#dedede'
+    cyl = patches.Circle((0, 0), 0.51, linewidth=0.2, edgecolor='black', facecolor=grey_color)
+    ax.add_patch(cyl)
 
     # Show, save and close figure
     plt.show()
