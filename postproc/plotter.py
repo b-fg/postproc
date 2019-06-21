@@ -17,15 +17,15 @@ import matplotlib.animation as animation
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 plt.rc('text', usetex=True )
-plt.rc('font',family = 'sans-serif',  size=13)
+plt.rc('font',family = 'sans-serif',  size=13) # use 13 for squared double columns figures
 mpl.rc('xtick', labelsize=13)
 mpl.rc('ytick', labelsize=13)
 plt.rcParams['animation.ffmpeg_path'] = r"/usr/bin/ffmpeg"
 mpl.rcParams['axes.linewidth'] = 0.5
 
-plt.switch_backend('AGG')
+# plt.switch_backend('AGG') #png
 # plt.switch_backend('PS')
-# plt.switch_backend('PDF')
+# plt.switch_backend('PDF') #pdf
 # plt.switch_backend('PS')
 # plt.switch_backend('SVG')
 
@@ -113,6 +113,7 @@ def plot2D(u, cmap, lvls, lim, file, **kwargs):
     plt.clf()
     return
 
+
 def plot2D_animation(u, cmap, lvls, lim, **kwargs):
     import matplotlib.colors as colors
     from mpl_toolkits.axes_grid1 import make_axes_locatable
@@ -163,13 +164,12 @@ def plot2D_animation(u, cmap, lvls, lim, **kwargs):
 
     # Add cylinder
     grey_color = '#dedede'
-    cyl = patches.Circle((0,0),0.5,linewidth=0.2,edgecolor='black',facecolor=grey_color)
+    cyl = patches.Circle((0,0),scaling/2,linewidth=0.2,edgecolor='black',facecolor=grey_color)
     ax.add_patch(cyl)
 
     # Show, save and close figure
 
     return fig, ax, cf
-
 
 def plot2D_uv(u, cmap, lvls, lim, file, **kwargs):
     """
@@ -188,6 +188,10 @@ def plot2D_uv(u, cmap, lvls, lim, file, **kwargs):
     # Internal imports
     import matplotlib.colors as colors
     from mpl_toolkits.axes_grid1 import make_axes_locatable
+    plt.rc('font', family='sans-serif', size=15)
+    mpl.rc('xtick', labelsize=15)
+    mpl.rc('ytick', labelsize=15)
+    # mpl.rcParams["contour.negative_linestyle"] = 'dotted'
 
     N, M = u.shape[0], u.shape[1]
     if not 'x' in kwargs:
@@ -216,8 +220,15 @@ def plot2D_uv(u, cmap, lvls, lim, file, **kwargs):
     # Create contourf given a normalized (norm) colormap (cmap)
     norm = colors.Normalize(vmin=lim[0], vmax=lim[1])
     # cf = plt.contourf(x, y, u, '--', lvls, vmin=lim[0], vmax=lim[1], norm=norm, cmap=cmap)
-    ax.contour(x, y, u, lvls, linewidths=0.5, colors='k')
-    # cf = ax.contourf(x, y, u, lvls, vmin=lim[0], vmax=lim[1], norm=norm, cmap=cmap)
+    r = ax.contour(x, y, u, lvls, colors='k')
+    for line, lvl in zip(r.collections, r.levels):
+        if lvl < 0:
+            line.set_linestyle('--')
+            line.set_dashes([(0, (4.0, 4.0))])
+            line.set_linewidth(0.4)
+        else:
+            line.set_linewidth(0.6)
+
 
     ax.xaxis.set_ticks([0.5, 1.0, 1.5, 2])
     ax.yaxis.set_ticks([-0.5, 0.0, 0.5])
@@ -237,6 +248,11 @@ def plot2D_uv(u, cmap, lvls, lim, file, **kwargs):
     # mpl.colorbar.ColorbarBase(cbax, norm=norm, cmap=cmap)
 
     # Add annotation if desired
+
+    cyl = patches.Circle((0, 0), radius=0.5, linewidth=0.5, edgecolor='black', facecolor='white', zorder=10, alpha=1)
+    ax.add_patch(cyl)
+
+
     if annotate:
         str_annotation = max_min_loc(u, xmin, ymin)
         print(str_annotation)
@@ -249,8 +265,64 @@ def plot2D_uv(u, cmap, lvls, lim, file, **kwargs):
     # Show, save and close figure
     plt.savefig(file, transparent=True, bbox_inches='tight')
     plt.draw()
-    plt.show()
-    # plt.clf()
+    # plt.show()
+    plt.clf()
+    return
+
+
+
+def plot2D_circulation(u, cmap, lvls, lim, file, **kwargs):
+    import matplotlib.colors as colors
+    from mpl_toolkits.axes_grid1 import make_axes_locatable
+    plt.rc('font', family='sans-serif', size=6)
+    mpl.rc('xtick', labelsize=6)
+    mpl.rc('ytick', labelsize=6)
+
+    N, M = u.shape[0], u.shape[1]
+    if not 'x' in kwargs:
+        xmin, xmax = 0, N-1
+    else:
+        xmin, xmax = kwargs['x'][0], kwargs['x'][1]
+    if not 'y' in kwargs:
+        ymin, ymax = -M/2, M/2-1
+    else:
+        ymin, ymax = kwargs['y'][0], kwargs['y'][1]
+    annotate = kwargs.get('annotate', False)
+    scaling = kwargs.get('scaling', 1)
+    xshift = kwargs.get('xshift', 0)
+    yshift = kwargs.get('yshift', 0)
+
+    # Uniform grid generation
+    x, y = np.linspace(xmin/scaling, xmax/scaling, N), np.linspace(ymin/scaling, ymax/scaling, M)
+    x, y = x+xshift, y+yshift
+    x, y = np.meshgrid(x, y)
+    u = np.transpose(u)
+
+    # Matplotlib definitions
+    fig1 = plt.gcf()
+    ax = plt.gca()
+
+    # Create contourf given a normalized (norm) colormap (cmap)
+    norm = colors.Normalize(vmin=lim[0], vmax=lim[1])
+    # cf = plt.contourf(x, y, u, lvls, vmin=lim[0], vmax=lim[1], norm=norm, cmap=cmap)
+    ax.contour(x, y, u, lvls, linewidths=0.2, colors='k')
+    cf = ax.contourf(x, y, u, lvls, vmin=lim[0], vmax=lim[1], norm=norm, cmap=cmap)
+
+    # Scale contourf and set limits
+    plt.axis('scaled')
+    plt.xlim(np.min(x), np.max(x))
+    plt.ylim(np.min(y), np.max(y))
+    ax.tick_params(bottom="on", top="on", right="on", which='both', direction='in', length=2)
+
+    grey_color = '#dedede'
+    cyl = patches.Circle((0, 0), radius=0.5, linewidth=0.5, edgecolor='black', facecolor='white', zorder=10, alpha=1)
+    rect = patches.Rectangle((0.55, -0.8), 1.5, 1.6, linewidth=0.5, edgecolor='purple', facecolor='none')
+    ax.add_patch(cyl)
+    # ax.add_patch(rect)
+
+    # Show, save and close figure
+    plt.savefig(file, transparent=True, bbox_inches='tight')
+    plt.clf()
     return
 
 
@@ -315,13 +387,12 @@ def plot2Dvort(u, cmap, lvls, lim, file, **kwargs):
     ax.tick_params(bottom="on", top="on", right="on", which='both', direction='in', length=2)
 
     # Show, save and close figure
-    plt.show()
     plt.savefig(file, transparent=True, bbox_inches='tight')
     # plt.draw()
     # plt.clf()
     return
 
-def plot2Dseparation(u, cmap, lvls, lim, file, **kwargs):
+def plot2Dseparation(u, file, **kwargs):
     """
     Return nothing and saves the figure in the specified file name.
     Args:
@@ -344,54 +415,413 @@ def plot2Dseparation(u, cmap, lvls, lim, file, **kwargs):
 
     N, M = u.shape[0], u.shape[1]
     scaling = kwargs.get('scaling', 1)
+    ptype = kwargs.get('ptype', 'contourf')
     xshift = kwargs.get('xshift', 0)
     yshift = kwargs.get('yshift', 0)
-    if not 'grid3D' in kwargs:
+    cmap = kwargs.get('cmap', 'seismic')
+    lvls = kwargs.get('lvls', 50)
+    lim = kwargs.get('lim', [np.min(u), np.max(u)])
+    if not 'grid' in kwargs:
         xmin, xmax = 0, N-1
         ymin, ymax = -M / 2, M / 2 - 1
         x, y = np.linspace(xmin / scaling, xmax / scaling, N), np.linspace(ymin / scaling, ymax / scaling, M)
         x, y = x + xshift, y + yshift
         x, y = np.meshgrid(x, y)
     else:
-        grid3D = kwargs['grid3D']
-        print(grid3D.shape)
-        x, y = grid3D[2, 0]/scaling, grid3D[1, 0]/scaling
-
-    # Uniform grid generation
-    u = np.transpose(u)
+        grid = kwargs['grid']
+        x, y = grid[0]/scaling, grid[1]/scaling
 
     # Matplotlib definitions
-    fig1 = plt.gcf()
+    fig = plt.gcf()
     ax = plt.gca()
 
     # Create contourf given a normalized (norm) colormap (cmap)
     norm = colors.Normalize(vmin=lim[0], vmax=lim[1])
-    # ax.contour(x, y, u, lvls, linewidths=0.2, colors='k')
-    cf = ax.contourf(x, y, u, lvls, vmin=lim[0], vmax=lim[1], norm=norm, cmap=cmap)
+    # lvls = np.linspace(lim[0], lim[1], lvls + 1)
+    if ptype == 'contourf':
+        # ax.contour(x, y, u, lvls, linewidths=0.2, colors='k')
+        # cf = ax.contourf(x.T, y.T, u.T, levels=lvls, vmin=lim[0], vmax=lim[1], norm=norm, cmap=cmap, extend='both')
+        cf = ax.contourf(x.T, y.T, u.T, levels=lvls, vmin=lim[0], vmax=lim[1], norm=norm, cmap=cmap)
+    else:
+        cf = ax.pcolormesh(x.T, y.T, u.T, vmin=lim[0], vmax=lim[1], norm=norm, cmap=cmap)
 
     # Scale contourf and set limits
     plt.axis('scaled')
     plt.xlim(np.min(x), np.max(x))
     plt.ylim(np.min(y), np.max(y))
-
-    # ax.xaxis.set_ticks(np.arange(0.5, 2.5, 0.5))
-    ax.xaxis.set_ticks([0., 0.5, 1.0, 1.5])
-    ax.yaxis.set_ticks([-0.5, 0.0, 0.5])
-    ax.tick_params(bottom="on", top="on", right="on", which='both', direction='in', length=2)
+    print(np.min(x), np.max(x))
+    print(np.min(y), np.max(y))
+    ax.tick_params(bottom=True, top=True, right=True, which='both', direction='in', length=2)
 
     # Add cylinder
     grey_color = '#dedede'
-    cyl = patches.Circle((0, 0), 0.51, linewidth=0.2, edgecolor='black', facecolor=grey_color)
+    cyl = patches.Circle((0, 0),scaling/2, linewidth=0.4, edgecolor='purple', facecolor='None')
     ax.add_patch(cyl)
 
+    # Colormap
+    # divider = make_axes_locatable(ax)
+    # cax = divider.append_axes("right", size="5%", pad=0.05)
+    # v = np.linspace(lim[0], lim[1], 10, endpoint=True)
+    # c = mpl.cm.get_cmap(cmap)
+    # c.set_under('r')
+    # c.set_over('b')
+    # plt.colorbar(cf, cax=cax, norm=norm, cmap=c, ticks=v, boundaries=v)
+
     # Show, save and close figure
-    plt.show()
     plt.savefig(file, transparent=True, bbox_inches='tight')
-    # plt.draw()
-    # plt.clf()
+    plt.clf()
     return
 
-# ------------------------------------------------------ CL-t
+# ------------------------------------------------------
+def two_point_correlations_single(a, fname):
+    from matplotlib.gridspec import GridSpec
+
+    n_points = len(a)
+    fig = plt.gcf()
+    ax = plt.gca()
+
+    for i, b in enumerate(a):
+        point_str = b[0]
+        n_cases = len(b[1])
+        print(point_str)
+        for j, t in enumerate(b[1]):
+            case_name, c, d = t[0], t[1], t[2]
+            d[0]=0.011111
+            if 'pi' in case_name:
+                case_name = '\pi'
+                max_d = np.max(d)
+            ax.plot(d, c, color=colors[j], lw=1.5, label='$'+case_name+'$', marker=markers[j], markevery=0.05, markersize=4)
+
+    leg1 = ax.legend(loc='lower left')
+    leg1.get_frame().set_edgecolor('black')
+    leg1.get_frame().set_facecolor('white')
+    leg1.get_frame().set_linewidth(0.5)
+    leg1.get_frame().set_alpha(0.5)
+
+
+
+    ax.set_ylabel(r'$\left\langle v_1, v_2 \right\rangle$')
+    ax.set_xlabel(r'$\log d/D$')
+
+    ax.tick_params(bottom=True, top=True, right=True, which='both', direction='in', length=2)
+    ax.set_xscale('log', nonposx='clip')
+    ax.set_xlim(1.1e-2,max_d)
+    ax.set_ylim(0.48,1.02)
+    ax.yaxis.set_ticks([0.5,0.6,0.7,0.8,0.9,1.0])
+
+    fig, ax = makeSquare(fig,ax)
+    plt.savefig(fname, transparent=True, bbox_inches='tight')
+
+    return
+
+
+def two_point_correlations(a, fname):
+    from matplotlib.gridspec import GridSpec
+
+    n_points = len(a)
+    fig = plt.figure()
+    gs = GridSpec(2, 2)
+    ax = []
+    ax1 = fig.add_subplot(gs[0, 0])
+    ax2 = fig.add_subplot(gs[0, 1], sharex=ax1, sharey=ax1)
+    ax3 = fig.add_subplot(gs[1, 0], sharex=ax1, sharey=ax1)
+    ax4 = fig.add_subplot(gs[1, 1], sharex=ax1, sharey=ax1)
+    ax.extend([ax1, ax2, ax3, ax4])
+
+    for i, b in enumerate(a):
+        point_str = b[0]
+        n_cases = len(b[1])
+        print(point_str)
+        print(b)
+        for j, t in enumerate(b[1]):
+            case_name, c, d = t[0], t[1], t[2]
+            d[0]=0.011111
+            if 'pi' in case_name:
+                case_name = '\pi'
+                max_d = np.max(d)
+            ax[i].plot(d, c, color=colors[j], lw=1, label='$'+case_name+'$')
+
+    leg1 = ax1.legend(loc='lower left')
+    leg1.get_frame().set_edgecolor('black')
+    leg1.get_frame().set_facecolor('white')
+    leg1.get_frame().set_linewidth(0.5)
+    leg1.get_frame().set_alpha(0.85)
+
+    plt.setp(ax1.get_xticklabels(), visible=False)
+    plt.setp(ax2.get_xticklabels(), visible=False)
+    plt.setp(ax2.get_yticklabels(), visible=False)
+    plt.setp(ax4.get_yticklabels(), visible=False)
+
+    ax1.set_ylabel(r'$\left\langle v_1, v_2 \right\rangle$')
+    ax3.set_ylabel(r'$\left\langle v_1, v_2 \right\rangle$')
+    ax3.set_xlabel(r'$\log d/D$')
+    ax4.set_xlabel(r'$\log d/D$')
+
+    for q in ax:
+        q.tick_params(bottom=True, top=True, right=True, which='both', direction='in', length=2)
+        q.set_xlim(xmax=max_d)
+        q.set_ylim(0.5, 1.1)
+        # q.set_xscale('log', nonposx='clip')
+
+    fig_size = fig.get_size_inches()
+    fig.set_size_inches(fig_size[1] * 1.1, fig_size[1] * 1.1)
+    fig.tight_layout()
+    plt.savefig(fname, transparent=True, bbox_inches='tight')
+
+    return
+
+
+def two_point_correlations_3_horizontal(a, fname):
+    from matplotlib.gridspec import GridSpec
+    plt.rc('font', family='sans-serif', size=14)  # use 13 for squared double columns figures
+    mpl.rc('xtick', labelsize=14)
+    mpl.rc('ytick', labelsize=14)
+
+    n_points = len(a)
+    fig = plt.figure()
+    gs = GridSpec(1, 3)
+    ax = []
+    ax1 = fig.add_subplot(gs[0, 0])
+    ax2 = fig.add_subplot(gs[0, 1], sharey=ax1)
+    ax3 = fig.add_subplot(gs[0, 2], sharey=ax1)
+    ax.extend([ax1, ax2, ax3])
+
+    for i, b in enumerate(a):
+        point_str = b[0]
+        n_cases = len(b[1])
+        print(point_str)
+        for j, t in enumerate(b[1]):
+            case_name, c, d = t[0], t[1], t[2]
+            d[0]=0.011111
+            if 'pi' in case_name:
+                case_name = '\pi'
+                max_d = np.max(d)
+            every = [4,2,2,1,1]
+            ax[i].plot(d, c, color=colors[j], lw=1.5, label='$'+case_name+'$', marker=markers[j], markevery=0.05, markersize=4)
+
+    leg1 = ax1.legend(loc='upper right')
+    leg1.get_frame().set_edgecolor('black')
+    leg1.get_frame().set_facecolor('white')
+    leg1.get_frame().set_linewidth(0.5)
+    leg1.get_frame().set_alpha(0.5)
+
+    plt.setp(ax2.get_yticklabels(), visible=False)
+    plt.setp(ax3.get_yticklabels(), visible=False)
+
+    ax1.set_ylabel(r'$\left\langle v_1, v_2 \right\rangle$')
+    ax1.set_xlabel(r'$\log d/D$')
+    ax2.set_xlabel(r'$\log d/D$')
+    ax3.set_xlabel(r'$\log d/D$')
+
+    for q in ax:
+        q.tick_params(bottom=True, top=True, right=True, which='both', direction='in', length=2)
+        # print(max_d)
+        # q.set_ylim(0.5, 1.1)
+        q.set_xscale('log', nonposx='clip')
+        q.set_xlim(1.1e-2,max_d)
+
+    fig_size = fig.get_size_inches()
+    fig.set_size_inches(fig_size[1] * 2, fig_size[1] * 2/2.8)
+    fig.tight_layout()
+    plt.savefig(fname, transparent=True, bbox_inches='tight')
+
+    return
+
+
+def two_point_correlations_3_vertical(a, fname):
+    from matplotlib.gridspec import GridSpec
+
+    n_points = len(a)
+    fig = plt.figure()
+    gs = GridSpec(3, 1)
+    ax = []
+    ax1 = fig.add_subplot(gs[0, 0])
+    ax2 = fig.add_subplot(gs[1, 0], sharex=ax1)
+    ax3 = fig.add_subplot(gs[2, 0], sharex=ax1)
+    ax.extend([ax1, ax2, ax3])
+
+    for i, b in enumerate(a):
+        point_str = b[0]
+        n_cases = len(b[1])
+        print(point_str)
+        for j, t in enumerate(b[1]):
+            case_name, c, d = t[0], t[1], t[2]
+            d[0]=0.011111
+            if 'pi' in case_name:
+                case_name = '\pi'
+                max_d = np.max(d)
+            every = [4,2,2,1,1]
+            ax[i].plot(d, c, color=colors[j], lw=1.5, label='$'+case_name+'$', marker=markers[j], markevery=0.05, markersize=4)
+
+    leg1 = ax1.legend(loc='upper right')
+    leg1.get_frame().set_edgecolor('black')
+    leg1.get_frame().set_facecolor('white')
+    leg1.get_frame().set_linewidth(0.5)
+    leg1.get_frame().set_alpha(0.5)
+
+    plt.setp(ax1.get_xticklabels(), visible=False)
+    plt.setp(ax2.get_xticklabels(), visible=False)
+
+    ax1.set_ylabel(r'$\left\langle v_1, v_2 \right\rangle$')
+    ax2.set_ylabel(r'$\left\langle v_1, v_2 \right\rangle$')
+    ax3.set_ylabel(r'$\left\langle v_1, v_2 \right\rangle$')
+    ax3.set_xlabel(r'$\log d/D$')
+
+    for q in ax:
+        q.tick_params(bottom=True, top=True, right=True, which='both', direction='in', length=2)
+        # print(max_d)
+        # q.set_ylim(0.5, 1.1)
+        q.set_xscale('log', nonposx='clip')
+        q.set_xlim(1.1e-2,max_d)
+
+    fig_size = fig.get_size_inches()
+    fig.set_size_inches(fig_size[1]/2, fig_size[1])
+    fig.tight_layout()
+    plt.savefig(fname, transparent=True, bbox_inches='tight')
+
+    return
+
+def CL_CD_theta(fy, fx, t, alphas, times, fname):
+    from scipy.signal import savgol_filter, resample
+    from scipy.interpolate import interp1d
+    from matplotlib.gridspec import GridSpec
+
+    # fig, [ax1, ax2, ax3] = plt.subplots(nrows=2, ncols=2, sharex=True)
+    fig = plt.figure()
+    gs = GridSpec(2, 2)
+    ax3 = fig.add_subplot(gs[:, 1])
+    ax1 = fig.add_subplot(gs[0, 0])
+    ax2 = fig.add_subplot(gs[1, 0], sharex=ax1)
+
+    ax1.plot(t, fy, color='black', lw=1, label=r'$C_L$')
+    ax1.plot(t, fx, color='grey', ls='dashed', lw=1, label=r'$C_D$')
+
+    upper, lower = zip(*alphas)
+    u, l = np.array(upper), np.array(lower)
+    u = savgol_filter(u, 7, 3)  # window size 51, polynomial order 3
+    l = savgol_filter(l, 7, 3)  # window size 51, polynomial order 3
+
+    ax2.plot(times, u, color='blue', lw=1, label=r'$\theta_u$')
+    ax2.plot(times, 360 + l - u, color='purple', ls='dotted', lw=1, label=r'$\theta_l-\theta_u$')
+    ax2.plot(times, -l, color='red', ls='dashed', lw=1, label=r'$360-\theta_l$')
+
+    fy_function = interp1d(t, fy, kind='cubic')
+    fy = fy_function(times)
+    ax3.scatter(fy, u + l, s=10, linewidths=1, color='black')
+    ax3.axhline(0, color='grey', lw=0.1)
+    ax3.axvline(0, color='grey', lw=0.1)
+
+    ax1.grid(axis='both', alpha=0.5)
+    ax2.grid(axis='both', alpha=0.5)
+
+    ax1.tick_params(bottom=True, top=True, right=True, which='both', direction='in', length=2)
+    ax2.tick_params(bottom=True, top=True, right=True, which='both', direction='in', length=2)
+    ax3.tick_params(bottom=True, top=True, right=True, which='both', direction='in', length=2)
+    ax1.set_xlim(min(t), max(t))
+    ax1.set_ylim(-2, 2)
+    ax1.yaxis.set_ticks([-1, 0, 1])
+    plt.setp(ax1.get_xticklabels(), visible=False)
+    ax2.set_ylim(90, 165)
+    ax2.yaxis.set_ticks([100, 120, 140, 160])
+    ax2.set_xlabel(r'$tU/D$')
+    ax3.set_xlabel(r'$C_L$')
+    # ax3.set_ylabel(r'$\theta_l+\theta_u$') #labelpad=-3 for 0.5
+    # ax3.set_ylim(-24,24) #0.5
+    # ax3.set_xlim(-1.8,1.8)
+    # ax3.set_ylim(-9,9) #pi
+    # ax3.set_xlim(-0.8,0.8)
+
+    leg1 = ax1.legend(loc='lower left')
+    leg1.get_frame().set_edgecolor('black')
+    leg1.get_frame().set_facecolor('white')
+    leg1.get_frame().set_linewidth(0.5)
+    leg1.get_frame().set_alpha(0.85)
+    leg2 = ax2.legend(loc=(0.0375, 0.45), numpoints=1, ncol=2, columnspacing=1, labelspacing=0.1, fontsize=9)
+
+    leg2.get_frame().set_edgecolor('black')
+    leg2.get_frame().set_facecolor('white')
+    leg2.get_frame().set_linewidth(0.5)
+    leg2.get_frame().set_alpha(0.85)
+
+    # fig_size = fig.get_size_inches()
+    # fig.set_size_inches(fig_size[1] * 2, fig_size[1] * 2 / 2.8)
+    # fig.tight_layout()
+
+    fig.tight_layout()
+    plt.savefig(fname, transparent=True, bbox_inches='tight')
+    return
+
+
+def CL_CD_theta_2(fy, fx, t, alphas, times, fname):
+    from scipy.signal import savgol_filter, resample
+    from scipy.interpolate import interp1d
+    from matplotlib.gridspec import GridSpec
+
+    # fig, [ax1, ax2, ax3] = plt.subplots(nrows=2, ncols=2, sharex=True)
+    fig = plt.figure()
+    gs = GridSpec(3, 1)
+    ax2 = fig.add_subplot(gs[1, 0])
+    ax1 = fig.add_subplot(gs[0, 0], sharex=ax2)
+    ax3 = fig.add_subplot(gs[2, 0])
+
+    ax1.plot(t, fy, color='black', lw=1, label=r'$C_L$')
+    ax1.plot(t, fx, color='grey', ls='dashed', lw=1, label=r'$C_D$')
+
+    upper, lower = zip(*alphas)
+    u, l = np.array(upper), np.array(lower)
+    u = savgol_filter(u, 7, 3)  # window size 51, polynomial order 3
+    l = savgol_filter(l, 7, 3)  # window size 51, polynomial order 3
+
+    ax2.plot(times, u, color='blue', lw=1, label=r'$\theta_u$')
+    ax2.plot(times, 360 + l - u, color='purple', ls='dotted', lw=1, label=r'$\theta_l-\theta_u$')
+    ax2.plot(times, -l, color='red', ls='dashed', lw=1, label=r'$360-\theta_l$')
+
+    fy_function = interp1d(t, fy, kind='cubic')
+    fy = fy_function(times)
+    ax3.scatter(fy, u + l, s=10, linewidths=1, color='black')
+    ax3.axhline(0, color='grey', lw=0.1)
+    ax3.axvline(0, color='grey', lw=0.1)
+
+    ax1.grid(axis='both', alpha=0.5)
+    ax2.grid(axis='both', alpha=0.5)
+
+    ax1.tick_params(bottom=True, top=True, right=True, which='both', direction='in', length=2)
+    ax2.tick_params(bottom=True, top=True, right=True, which='both', direction='in', length=2)
+    ax3.tick_params(bottom=True, top=True, right=True, which='both', direction='in', length=2)
+    ax2.set_xlim(min(t), max(t))
+    ax1.set_ylim(-2, 2)
+    ax1.yaxis.set_ticks([-1, 0, 1])
+    plt.setp(ax1.get_xticklabels(), visible=False)
+    ax2.set_ylim(90, 165)
+    ax2.yaxis.set_ticks([100, 120, 140, 160])
+    ax2.set_xlabel(r'$tU/D$')
+    ax3.set_xlabel(r'$C_L$')
+    # ax3.set_ylabel(r'$\theta_l+\theta_u$') #labelpad=-3 for 0.5
+    # ax3.set_ylim(-24,24) #0.5
+    # ax3.set_xlim(-1.8,1.8)
+    ax3.set_ylim(-9,9) #pi
+    ax3.set_xlim(-0.8,0.8)
+
+    leg1 = ax1.legend(loc='lower left')
+    leg1.get_frame().set_edgecolor('black')
+    leg1.get_frame().set_facecolor('white')
+    leg1.get_frame().set_linewidth(0.5)
+    leg1.get_frame().set_alpha(0.85)
+    leg2 = ax2.legend(loc=(0.0375, 0.45), numpoints=1, ncol=2, columnspacing=1, labelspacing=0.1, fontsize=9)
+
+    leg2.get_frame().set_edgecolor('black')
+    leg2.get_frame().set_facecolor('white')
+    leg2.get_frame().set_linewidth(0.5)
+    leg2.get_frame().set_alpha(0.85)
+
+    fig_size = fig.get_size_inches()
+    fig.set_size_inches(3.5, 8.5)
+
+    fig.tight_layout()
+    plt.savefig(fname, transparent=True, bbox_inches='tight')
+    return
+
+
 def plotCL(fy, t, file, **kwargs):
     """
     Plot the lift force as a time series.
@@ -440,7 +870,6 @@ def plotCL(fy, t, file, **kwargs):
             plt.text(x=1.02*max(t), y=0.8*max(fy), s=my_str, color='black')
 
     # Show plot and save figure
-    plt.show()
     plt.savefig(file, transparent=True, bbox_inches='tight')
     return
 
@@ -519,8 +948,6 @@ def plotTKEspatial_list(file, tke_tuple_list, **kwargs):
     i = 0
     for tke_tuple in tke_tuple_list:
         label = tke_tuple[0]
-        if 'piD' in label: label = '\pi'
-        else: label = label[:-1]
         tke = tke_tuple[1]
         if 'xD_min' in kwargs:
             x = x[x > kwargs['xD_min']]
@@ -554,7 +981,7 @@ def plotTKEspatial_list(file, tke_tuple_list, **kwargs):
     leg.get_frame().set_edgecolor('black')
     leg.get_frame().set_facecolor('white')
     leg.get_frame().set_linewidth(0.5)
-    leg.get_frame().set_alpha(0.5)
+    leg.get_frame().set_alpha(0.85)
     # ax.yaxis.set_ticks([-2, 0, 2])
     ax.tick_params(bottom="on", top="on", right="on", which='both', direction='in', length=2)
 
@@ -563,6 +990,138 @@ def plotTKEspatial_list(file, tke_tuple_list, **kwargs):
     plt.savefig(file, transparent=True, bbox_inches='tight')
     plt.clf()
     return
+
+
+def plotProfiles(file, profiles_tuple_list, **kwargs):
+    """
+
+    """
+    ax = plt.gca()
+    fig  = plt.gcf()
+
+    if not profiles_tuple_list:
+        raise ValueError("No profile series passed to the function.")
+    else:
+        M = profiles_tuple_list[0][1].shape[0]
+    if not 'y' in kwargs:
+        ymin, ymax = 0, M-1
+    else:
+        ymin, ymax = kwargs['y'][0], kwargs['y'][1]
+
+    scaling = kwargs.get('scaling', 1)
+    yshift = kwargs.get('yshift', 0)
+
+    ylabel = '$' + kwargs.get('ylabel','y') + '$'
+    y = np.linspace(ymin, ymax, M)/scaling + yshift
+
+    # Show lines
+    profiles_list = []
+    for i, profile_tuple in enumerate(profiles_tuple_list):
+        label = profile_tuple[0]
+        if 'piD' in label: label = '\pi'
+        else: label = label[:-1]
+        label = '$'+label+'$'
+        color = colors[i]
+        profile = profile_tuple[1]
+        plot = plt.plot(profile, y, color=color, lw=1.5, label=label, marker=markers[i], markevery=50, markersize=4)
+        profiles_list.append(profile)
+
+    # Set limits
+    ax.set_ylim(min(y), max(y))
+    fig, ax = makeSquare(fig,ax)
+
+    # Edit frame, labels and legend
+    plt.xlabel(r'$\left\langle u \right\rangle$')
+    plt.ylabel(ylabel, rotation=0)
+
+    leg = plt.legend(loc='lower left')
+
+    leg.get_frame().set_edgecolor('black')
+    leg.get_frame().set_facecolor('white')
+    leg.get_frame().set_linewidth(0.5)
+    leg.get_frame().set_alpha(0.85)
+    # ax.yaxis.set_ticks([-2, 0, 2])
+    ax.tick_params(bottom="on", top="on", right="on", which='both', direction='in', length=2)
+
+    # Show plot and save figure
+    plt.show()
+    plt.savefig(file, transparent=True, bbox_inches='tight')
+    plt.clf()
+    return
+
+
+def plotProfiles_multiple(file, tuple_profiles_tuple_list, **kwargs):
+    """
+
+    """
+    from collections import OrderedDict
+    from mpl_toolkits.mplot3d import Axes3D
+
+    fig  = plt.gcf()
+    ax = plt.gca(projection='3d')
+
+    if not tuple_profiles_tuple_list:
+        raise ValueError("No profile series passed to the function.")
+    else:
+        M = tuple_profiles_tuple_list[0][1][0][1].shape[0]
+    if not 'y' in kwargs:
+        ymin, ymax = 0, M-1
+    else:
+        ymin, ymax = kwargs['y'][0], kwargs['y'][1]
+
+    scaling = kwargs.get('scaling', 1)
+    yshift = kwargs.get('yshift', 0)
+
+    ylabel = '$' + kwargs.get('ylabel','y') + '$'
+    y = np.linspace(ymin, ymax, M)/scaling + yshift
+
+    # Show lines
+    for e in tuple_profiles_tuple_list:
+        x_loc = e[0]
+        profiles_tuple_list = e[1]
+        for i, profile_tuple in enumerate(profiles_tuple_list):
+            label = profile_tuple[0]
+            if 'piD' in label: label = '\pi'
+            elif 'D9' in label: label = '2\mathrm{D}'
+            else: label = label[:-1]
+            label = '$'+label+'$'
+            color = colors[i]
+            profile = profile_tuple[1]
+            plot = plt.plot(profile, y, x_loc, color=color, lw=1.5, label=label, markevery=50, markersize=4)
+
+    # Set limits
+    ax.set_xlim(0.35, 1.1)
+    ax.set_ylim(-3, 3)
+    ax.set_zlim(2, 10.5)
+    # fig, ax = makeSquare(fig,ax)
+
+    # Edit frame, labels and legend
+    ax.set_xlabel(r'$\overline{u}$', rotation=0)
+    ax.set_ylabel(ylabel, rotation=0)
+    ax.set_zlabel('$x$', rotation=0)
+
+    handles, labels = plt.gca().get_legend_handles_labels()
+    by_label = OrderedDict(zip(labels, handles))
+    leg = plt.legend(by_label.values(), by_label.keys(), loc=(0.8,0.15))
+    ax.view_init(azim=0, elev=140)
+
+    leg.get_frame().set_edgecolor('black')
+    leg.get_frame().set_facecolor('white')
+    leg.get_frame().set_linewidth(0.75)
+    leg.get_frame().set_alpha(0.75)
+    ax.xaxis.set_ticks([0.4,0.6,0.8,1])
+    ax.yaxis.set_ticks([-2,0,2])
+    ax.zaxis.set_ticks([4,6,8,10])
+    # ax.tick_params(bottom="on", top="on", right="on", which='both', direction='in', length=2)
+    # plt.switch_backend('PDF') #pdf
+    # ax.autoscale(enable=False, axis='both')  # you will need this line to change the Z-axis
+    # Show plot and save figure
+    # plt.show()
+    fig.tight_layout()
+    plt.savefig(file, transparent=True, bbox_inches='tight')
+    plt.clf()
+    return
+
 
 
 # ------------------------------------------------------ x-y
@@ -627,7 +1186,8 @@ def plotScatter(x, y, cases, file):
 
     # Show lines
     for i, case in enumerate(cases):
-        ax.scatter(x[i], y[i], c=colors[i], marker=markers[i], s=10, linewidths=1, label=case)
+        print(i)
+        ax.scatter(x[i], y[i], c=colors[i], marker=markers[i], s=30, linewidths=1, label=case)
 
 
     # Edit figure, axis, limits
@@ -644,10 +1204,55 @@ def plotScatter(x, y, cases, file):
     leg.get_frame().set_edgecolor('black')
     leg.get_frame().set_facecolor('white')
     leg.get_frame().set_linewidth(0.5)
-    leg.get_frame().set_alpha(0.5)
+    leg.get_frame().set_alpha(0.85)
 
     # Show plot and save figure
-    plt.show()
+    plt.savefig(file, transparent=True, bbox_inches='tight')
+    return
+
+def plotScatter2(x1, x2, y, cases, file):
+    """
+    Generate a x-y plot in space
+    :param x: series to plot [1D numpy array]
+    :param y: series to plot [1D numpy array]
+    :param label: y axis label [string]
+    :param file: output file name
+    :return: -
+    """
+    ax1 = plt.gca()
+    fig  = plt.gcf()
+    ax2 = ax1.twiny()
+
+    # Show lines
+    for i, case in enumerate(cases):
+        ax1.scatter(x1[i], y[i], c='red', marker=markers[i], s=10, linewidths=1, label=case)
+        ax2.scatter(x2[i], y[i], c='blue', marker=markers[i], s=10, linewidths=1, label=case)
+
+    # Edit figure, axis, limits
+    ax1.set_xlim(1,9)
+    ax2.set_xlim(1,9)
+    ax1.set_ylim(0.2, 1.3)
+    # ax.set_ylim(0.1, 1.4)
+
+    ax1.tick_params(bottom="on", top="off", right="on", which='both', direction='in', length=2)
+    ax2.tick_params(bottom="off", top="on", right="on", which='both', direction='in', length=2)
+
+    fig, ax1 = makeSquare(fig,ax1)
+    # Edit frame, labels and legend
+    ax1.set_xlabel('$\sigma_l$', color='red')
+    ax2.set_xlabel('$\sigma_u$', color='blue')
+
+    ax1.set_ylabel('$\overline{C}_L$')
+    leg = ax1.legend(loc='lower right')
+    for q in leg.legendHandles:
+        q.set_color('grey')
+    leg.get_frame().set_edgecolor('black')
+    leg.get_frame().set_facecolor('white')
+    leg.get_frame().set_linewidth(0.5)
+    leg.get_frame().set_alpha(0.85)
+
+    # Show plot and save figure
+    # plt.show()
     plt.savefig(file, transparent=True, bbox_inches='tight')
     return
 
@@ -719,7 +1324,7 @@ def plotXYSpatial_list(file, y_tuple_list, **kwargs):
     leg.get_frame().set_edgecolor('black')
     leg.get_frame().set_facecolor('white')
     leg.get_frame().set_linewidth(0.5)
-    leg.get_frame().set_alpha(0.5)
+    leg.get_frame().set_alpha(0.85)
     # ax.set_xlim(min(x), 12)
     # ax.set_ylim(ylims[0], ylims[1])
     ax.xaxis.set_ticks([2, 4, 6, 8, 10, 12])
@@ -732,23 +1337,25 @@ def plotXYSpatial_list(file, y_tuple_list, **kwargs):
     plt.clf()
     return
 
-def velocity_profiles(file, profiles_tuple_list, y_list, **kwargs):
+def velocity_profiles(file, profiles_tuple_list, **kwargs):
     """
     Similar to plotXYSpatial_list just for a specific test case
     """
     ax = plt.gca()
     fig  = plt.gcf()
 
-    ylog = kwargs.get('ylog', False)
-    ylabel = '$' + kwargs.get('ylabel','y') + '$'
+    ylabel = '$' + kwargs.get('ylabel','r') + '$'
 
     # Show lines
     profiles = []
     for i, profile_tuple in enumerate(profiles_tuple_list):
-        label = profile_tuple[0]
-        profile = profile_tuple[1]
-        y = y_list[i]
+        label, profile, y = profile_tuple[0], profile_tuple[1], profile_tuple[2]
+        p = np.where((np.array(y) > 0.45) & ((np.array(y) <0.85)))
+        profile=np.array(profile)[p]
+        y=np.array(y)[p]
         label = '$'+label+'$'
+        if 'pi' in label:
+            label = '$\pi$'
         color = colors[i]
         # plt.plot(profile, y, color=color, lw=1, label=label, marker=markers[i], markevery=10, markersize=4)
         plt.plot(profile, y, color=color, lw=1, label=label)
@@ -760,21 +1367,18 @@ def velocity_profiles(file, profiles_tuple_list, y_list, **kwargs):
     fig, ax = makeSquare(fig,ax)
 
     # Edit frame, labels and legend
-    plt.xlabel(r'$\overline{u}$')
+    plt.xlabel(r'$\omega_z|_z$')
     plt.ylabel(ylabel, rotation=0)
-    ax.set_ylim(np.min([np.min(y) for y in y_list]), np.max([np.max(y) for y in y_list]))
+    ax.set_ylim(np.min([np.min(s) for s in y]), np.max([np.max(s) for s in y]))
 
-
-    leg = plt.legend(loc='upper left')
-    leg.get_frame().set_edgecolor('white')
+    leg = plt.legend(loc='upper right')
+    leg.get_frame().set_edgecolor('black')
     leg.get_frame().set_facecolor('white')
-    leg.get_frame().set_linewidth(0)
-    leg.get_frame().set_alpha(0)
-
+    leg.get_frame().set_linewidth(0.75)
+    leg.get_frame().set_alpha(0.75)
     ax.tick_params(bottom="on", top="on", right="on", which='both', direction='in', length=2)
 
     # Show plot and save figure
-    plt.show()
     plt.savefig(file, transparent=True, bbox_inches='tight')
     plt.clf()
     return
@@ -1050,18 +1654,22 @@ def plotLogLogTimeSpectra_list_cascade(file, uk_tuple_list, freqs_list):
         label = uk_tuple[0]
         print(label)
         if 'pi' in label: label = '\pi'
-        if '2D' in label: label = '2\mathrm{D}'
+        if '2D' in label or 'D9' in label: label = '2\mathrm{D}'
         uk = uk_tuple[1]
         label = '$'+label+'$'
         color = colors[i]
         plt.loglog(freqs_list[i], uk, color=color, lw=0.5, label=label)
 
 
-    for i in np.arange(4):
-        x, y = loglogLine(p2=(1.e2, 1e-13*100**i), p1x=1e-2, m=-5/3)
+    for i in np.arange(5):
+        x, y = loglogLine(p2=(1.e2, 1e-11*10**i), p1x=1e-2, m=-5/3)
         plt.loglog(x, y, color='black', lw=0.5, ls='dotted', alpha=0.3)
-        x, y = loglogLine(p2=(1.2e2, 1e-16*100**i), p1x=1e-2, m=-3)
+    for i in np.arange(2):
+        x, y = loglogLine(p2=(1.2e2, 1e-16 * 100 ** i), p1x=1e-3, m=-3)
         plt.loglog(x, y, color='black', lw=0.5, ls='dashdot', alpha=0.3)
+        x, y = loglogLine(p2=(1.2e2, 1e-17*100**i), p1x=1e-2, m=-3.66)
+        plt.loglog(x, y, color='black', lw=0.5, ls='dashed', alpha=0.3)
+
 
     # Set limits
     ax.set_xlim(1e-2, 7e1) # Window
@@ -1073,19 +1681,22 @@ def plotLogLogTimeSpectra_list_cascade(file, uk_tuple_list, freqs_list):
 
     # Edit frame, labels and legend
     ax.tick_params(bottom="on", top="on", which='both', direction='in')
-    plt.xlabel(r'$f/UD$')
+    plt.xlabel(r'$fD/U$')
     plt.ylabel(r'$\mathrm{PS}\left(v\right)$')
     leg = plt.legend(loc='lower left')
     leg.get_frame().set_edgecolor('black')
     leg.get_frame().set_facecolor('white')
     leg.get_frame().set_linewidth(0.5)
-    leg.get_frame().set_alpha(0.5)
+    leg.get_frame().set_alpha(0.85)
     # ax.yaxis.set_ticks([-2, 0, 2])
     ax.tick_params(bottom="on", top="on", right="on", which='both', direction='in', length=2)
     # ax.get_yaxis().set_ticks([], minor=True)
 
+    # ax.set_xticks([1.1, 1.2, 1.3, 1.4, 1.5, 1.6 ,1.7, 1.8, 1.9 ,2], minor=True)
+    # ax.set_yticks([0.3, 0.55, 0.7], minor=True)
+    # ax.xaxis.grid(True, which='major')
+
     # Show plot and save figure
-    plt.show()
     plt.savefig(file, transparent=True, bbox_inches='tight')
     plt.clf()
     return
@@ -1174,7 +1785,7 @@ def plotLumleysTriangle(eta, xi, file):
     leg.get_frame().set_edgecolor('black')
     leg.get_frame().set_facecolor('white')
     leg.get_frame().set_linewidth(0.5)
-    leg.get_frame().set_alpha(0.5)
+    leg.get_frame().set_alpha(0.85)
 
     # Show plot and save figure
     plt.show()
@@ -1204,11 +1815,11 @@ def plotLumleysTriangle_list(file, eta_tuple_list, xi_tuple_list):
     i = 0
     for eta in eta_tuple_list:
         label = eta[0]
-        if 'piD' in label: label = '\pi'
-        else: label = label[:-1]
+        # if 'piD' in label: label = '\pi'
+        # else: label = label[:-1]
         eta = eta[1]
         xi = xi_tuple_list[i][1]
-        label = '$'+label+'$'
+        label = r'$'+label+'$'
         plt.scatter(xi, eta, marker=markers[i], c=colors[i], s=10, linewidths=0.1, label=label, edgecolor = 'black')
         i += 1
 
@@ -1225,14 +1836,13 @@ def plotLumleysTriangle_list(file, eta_tuple_list, xi_tuple_list):
     leg.get_frame().set_edgecolor('black')
     leg.get_frame().set_facecolor('white')
     leg.get_frame().set_linewidth(0.5)
-    leg.get_frame().set_alpha(0.5)
+    leg.get_frame().set_alpha(0.85)
     ax.xaxis.set_ticks([-0.2,-0.1,0,0.1,0.2,0.3,0.4])
     ax.tick_params( direction='in', length=2)
     ax.tick_params(bottom="on", top="on", right='on',which='both', direction='in')
     # plt.minorticks_off()
 
     # Show plot and save figure
-    plt.show()
     plt.savefig(file, transparent=True, bbox_inches='tight')
     return
 

@@ -6,7 +6,7 @@
 """
 # Imports
 import numpy as np
-
+import warnings
 
 # Functions
 def avg_z(u):
@@ -17,7 +17,8 @@ def avg_z(u):
     :return: Return the span-wise spatial average of a three-dimensional field.
     """
     if not len(u.shape)==3:
-        raise ValueError("Fields must be three-dimensional")
+        warnings.warn("Field not 3D. Returning same array.")
+        return u
     else:
         if np.array_equal(u[..., 0], u[..., -1]): # Periodic on last axis
             return np.trapz(u, axis=2)/(u.shape[2]-1)
@@ -82,16 +83,16 @@ def ddz(u):
         return np.gradient(u, axis=2, edge_order=2)
 
 
-def vortz(u, v):
+def vortZ(u, v):
     """
     :param u: x component of the velocity vector field.
     :param v: y component of the velocity vector field.
     :return: The z-vorticity of a two-dimensional velocity vector field
     """
-    if not (len(u.shape)==2 and len(v.shape)==2):
-        raise ValueError("Fields must be two-dimensional")
-    else:
-        return ddx(v)-ddy(u)
+    # if not (len(u.shape)==2 and len(v.shape)==2):
+    #     raise ValueError("Fields must be two-dimensional")
+    # else:
+    return ddx(v)-ddy(u)
 
 
 def vort(u, v, w):
@@ -106,6 +107,21 @@ def vort(u, v, w):
         raise ValueError("Fields must be three-dimensional")
     else:
         return ddy(w)-ddz(v), ddz(u)-ddx(w), ddx(v)-ddy(u)
+
+def grad(u):
+    """
+    Return the gradient of a n-dimensinal array (scalar field)
+    :param u: input scalar array
+    :return: vector field array, gradient of u
+    """
+    return np.array(np.gradient(u, edge_order=2))
+
+def div(*args):
+    dd = [ddx, ddy, ddz]
+    res = np.zeros(args[0].shape)
+    for i, a in enumerate(args):
+        res += dd[i](a)
+    return res
 
 def J(u, v, w):
     """
@@ -144,3 +160,88 @@ def Q(u, v, w):
     Q = 0.5*(R_mag**2-S_mag**2)
     # Q = np.clip(Q, 0, None)
     return Q
+
+def map_cyl(grid2D, r, eps):
+    x, y = grid2D[0], grid2D[1]
+    r_grid = np.sqrt(x**2+y**2)
+
+    indices = np.where((r_grid>=r*(1+0.5*eps)) & (r_grid<=r*(1+1.5*eps)))
+    r_grid = np.zeros(x.shape)
+    r_grid[indices] = 1
+
+    return r_grid, indices
+
+def map_normal(grid2D, r, r_max, angle):
+    x, y = grid2D[0], grid2D[1]
+    r_grid = np.sqrt(x**2+y**2)
+    atan_grid = np.arctan2(y, x)*180/np.pi
+
+    angle_eps = 0.5
+
+    # indices = np.where((r_grid<=r_max) & (np.abs(atan_grid-angle)<angle_eps))
+    indices = np.where((r_grid<=r_max) & close(atan_grid, angle, angle_eps))
+    result = np.zeros(x.shape)
+    result[indices] = 1
+
+    return result, indices
+
+
+def separation_points(q, alphas, eps=0.0005):
+    """
+    :param q: 2D scalar field (quantity) we analyse
+    :param l: list of tuples. Each tuples is: ((i,j), alpha))
+    :return: upper and lower separation points
+    """
+    alpha_u, alpha_l = None, None
+    # find upper separation point
+    for (idx, alpha) in sorted(alphas, key=lambda tup: tup[1])[80:]:
+        if -eps<=q[idx] and q[idx]<=eps:
+            alpha_u = alpha
+            break
+    # find lower separation point
+    for (idx, alpha) in sorted(alphas, key=lambda tup: tup[1], reverse=True)[80:]:
+        if -eps<=q[idx] and q[idx]<=eps:
+            alpha_l = alpha
+            break
+    return alpha_u, alpha_l-360
+
+
+def separation_points2(q, alphas, eps=0.1):
+    """
+    :param q: 2D scalar field (quantity) we analyse
+    :param l: list of tuples. Each tuples is: ((i,j), alpha))
+    :return: upper and lower separation points
+    """
+    alpha_u, alpha_l = None, None
+    l_upper = sorted(alphas, key=lambda tup: tup[1])[100:]
+    l_lower = sorted(alphas, key=lambda tup: tup[1], reverse=True)[100:]
+
+    # find upper separation point
+    for i, (idx, alpha) in enumerate(l_upper):
+        if q[idx]<eps:
+            alpha_u = alpha
+            break
+
+    # find lower separation point
+    for i, (idx, alpha) in enumerate(l_lower):
+        if q[idx]<eps:
+            alpha_l = alpha
+            break
+    return alpha_u, alpha_l-360
+
+
+def corr(a,b):
+    am = np.mean(a)
+    bm = np.mean(b)
+    ac = a - am  # a centered
+    bc = b - bm  # b centered
+
+    cov_ab = np.mean(ac * bc)
+    cov_aa = np.mean(ac ** 2)
+    cov_bb = np.mean(bc ** 2)
+
+    return cov_ab / np.sqrt(cov_aa * cov_bb)
+
+
+def close(a, b, eps):
+    return np.abs(a - b) < eps

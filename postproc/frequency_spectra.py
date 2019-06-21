@@ -115,9 +115,14 @@ def freq_spectra_scipy_welch(t, u, n, OL, **kwargs):
     t = np.arange(t_min, t_max, dt)[:-1]  # Regularize t and Skip last one because can be problematic if > than actual t_max
     u = u_function(t)  # Regularize u
 
+    # Buggy (do not use)
+    # freqs, uk = signal.welch(u, fs=1 / dt, window='hanning', nperseg=int(u.size / n), noverlap=None, scaling='spectrum')
+
+    # Bug fix
     nperseg = int(u.size/n)
     noverlap = int(nperseg*OL)
     freqs, uk = signal.welch(u, fs=1/dt, window='hanning', nperseg=nperseg, noverlap=noverlap, scaling='spectrum')
+
     return freqs, uk
 
 

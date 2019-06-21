@@ -8,7 +8,7 @@
 # Imports
 import numpy as np
 import vtk
-
+import pickle
 
 # Functions
 def read_data(file, shape, **kwargs):
@@ -271,41 +271,77 @@ def importExpCpTheta(file):
     return theta, cp
 
 def read_vtk(fname):
-    print('Reading data...')
     reader = vtk.vtkXMLPImageDataReader()
     reader.SetFileName(fname)
     reader.Update()
     data = reader.GetOutput()
 
-    sh = data.GetDimensions()
+    sh = data.GetDimensions()[::-1]
     ndims = len(sh)
     bounds = data.GetBounds()  # (Xmin,Xmax,Ymin,Ymax,Zmin,Zmax)
     # nPoints = data.GetNumberOfPoints()
     (xmin, xmax, ymin, ymax, zmin, zmax) = data.GetBounds()  # (Xmin,Xmax,Ymin,Ymax,Zmin,Zmax)
-    grid3D = np.mgrid[zmin:zmax + 1, ymin:ymax + 1, xmin:xmax + 1]
+    grid3D = np.mgrid[xmin:xmax + 1, ymin:ymax + 1, zmin:zmax + 1]
+    # grid3D = np.transpose(grid3D, ())
     pointData = data.GetPointData()
 
     # get vector field
-    v = np.array(pointData.GetVectors("Velocity")).reshape(sh + (ndims,), order='F')
+    v = np.array(pointData.GetVectors("Velocity")).reshape(sh + (ndims,))
     vec = []
     for d in range(ndims):
         a = v[..., d]
         vec.append(a)
     # get scalar field
-    sca = np.array(pointData.GetScalars('Pressure')).reshape(sh, order='F')
+    sca = np.array(pointData.GetScalars('Pressure')).reshape(sh + (1,))
 
-    return np.array(vec), sca, grid3D
+    return np.transpose(np.array(vec), (0,3,2,1)), np.transpose(sca, (0,3,2,1)), grid3D
 
 
-def pvd_parser(fname):
+def read_vti(fname):
+    reader = vtk.vtkXMLPImageDataReader()
+    reader.SetFileName(fname)
+    reader.Update()
+    data = reader.GetOutput()
+
+    sh = data.GetDimensions()[::-1]
+    ndims = len(sh)
+    bounds = data.GetBounds()  # (Xmin,Xmax,Ymin,Ymax,Zmin,Zmax)
+    # nPoints = data.GetNumberOfPoints()
+    (xmin, xmax, ymin, ymax, zmin, zmax) = data.GetBounds()  # (Xmin,Xmax,Ymin,Ymax,Zmin,Zmax)
+    grid3D = np.mgrid[xmin:xmax + 1, ymin:ymax + 1, zmin:zmax + 1]
+    # grid3D = np.transpose(grid3D, ())
+    pointData = data.GetPointData()
+
+    # get vector field
+    v = np.array(pointData.GetVectors("Velocity")).reshape(sh + (ndims,))
+    vec = []
+    for d in range(ndims):
+        a = v[..., d]
+        vec.append(a)
+    # get scalar field
+    sca = np.array(pointData.GetScalars('Pressure')).reshape(sh + (1,))
+
+    return np.transpose(np.array(vec), (0,3,2,1)), np.transpose(sca, (0,3,2,1)), grid3D
+
+
+def pvd_parser(fname, n): # 'n' is the number of snapshots contained in fname
     times = []
     files = []
     with open(fname) as f:
         lines = f.readlines()
 
-    for line in lines[2:-2]:
+    for line in lines[2:-2][:n]:
         l = line.split(" ")
         times.append(float(l[1].split("\"")[1]))
         files.append(str(l[4].split("\"")[1]))
-
     return times, files
+
+def write_object(obj, fname):
+    with open(fname, 'wb') as output:  # Overwrites any existing file.
+        pickle.dump(obj, output, protocol=pickle.HIGHEST_PROTOCOL)
+    return
+
+def read_object(fname):
+    with open(fname, 'rb') as input:  # Overwrites any existing file.
+        obj = pickle.load(input)
+    return obj
