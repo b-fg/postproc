@@ -8,6 +8,7 @@
 
 # Imports
 import numpy as np
+import pandas as pd
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import matplotlib.colors as mpl_colors
@@ -25,9 +26,8 @@ mpl.rcParams['axes.linewidth'] = 0.5
 
 # plt.switch_backend('AGG') #png
 # plt.switch_backend('PS')
-# plt.switch_backend('PDF') #pdf
+plt.switch_backend('PDF') #pdf
 # plt.switch_backend('PS')
-# plt.switch_backend('SVG')
 
 colors = ['black', 'orange', 'cyan', 'green', 'blue', 'red', 'magenta', 'yellow']
 # colors = ['orange', 'cyan', 'green', 'blue', 'red', 'magenta', 'yellow']
@@ -390,6 +390,77 @@ def plot2Dvort(u, cmap, lvls, lim, file, **kwargs):
     plt.savefig(file, transparent=True, bbox_inches='tight')
     # plt.draw()
     # plt.clf()
+    return
+
+def plot2Dlive(a, fname, **kwargs):
+    fig, ax = plt.subplots(1, 1)
+
+    N, M = a.shape[0], a.shape[1]
+    if not 'x' in kwargs:
+        xmin, xmax = 0, N - 1
+    else:
+        xmin, xmax = kwargs['x'][0], kwargs['x'][1]
+    if not 'y' in kwargs:
+        ymin, ymax = -M / 2, M / 2 - 1
+    else:
+        ymin, ymax = kwargs['y'][0], kwargs['y'][1]
+
+    levels = kwargs.get('levels', 50)
+    lim = kwargs.get('lim', [np.min(a), np.max(a)])
+    cmap = kwargs.get('cmap', 'Blues')
+    scaling = kwargs.get('scaling', 1)
+    xshift = kwargs.get('xshift', 0)
+    yshift = kwargs.get('yshift', 0)
+    field_name = kwargs.get('field_name', '')
+    n_ticks = kwargs.get('n_ticks', 10)
+    n_decimals = kwargs.get('n_decimals', 2)
+
+    x, y = np.linspace(xmin / scaling, xmax / scaling, N), np.linspace(ymin / scaling, ymax / scaling, M)
+    x, y = x + xshift, y + yshift
+    x, y = np.meshgrid(x, y)
+
+    norm = mpl_colors.Normalize(vmin=lim[0], vmax=lim[1])
+
+    if lim[0] < 0:
+        clvls = levels
+    else:
+        extra_levels = 5
+        dl = levels[1] - levels[0]
+        clvls = np.append(levels, np.linspace(lim[1] + dl, lim[1] + extra_levels * dl, extra_levels))
+    ax.contour(x, y, a.T, clvls, linewidths=0.05, colors='k')
+    cf = ax.contourf(x, y, a.T, levels, vmin=lim[0], vmax=lim[1], cmap=cmap, norm=norm, extend='both')
+
+    # Format figure
+    ax.tick_params(bottom="on", top="on", right="on", which='both', direction='in', labelbottom='on', length=2)
+    ax.set_aspect(1)
+    plt.xlim(np.min(x), np.max(x))
+    plt.ylim(np.min(y), np.max(y))
+    # ax.yaxis.set_ticks([-2, 0, 2])
+    # ax.xaxis.set_ticks([0, 2, 4, 6, 8, 10])
+    # -- Set title, circles and text
+    grey_color = '#dedede'
+    cyl = patches.Circle((0, 0), 0.5, linewidth=0.2, edgecolor='black', facecolor=grey_color, zorder=9999)
+    ax.add_patch(cyl)
+    # -- Add colorbar
+    divider = make_axes_locatable(ax)
+    cax = divider.append_axes("right", size="5%", pad=0.0, aspect=15)
+    if lim[0] < 0:
+        tick1 = np.linspace(lim[0], 0, n_ticks / 2)
+        dl = tick1[1] - tick1[0]
+        tick2 = np.linspace(dl, lim[1], n_ticks / 2 - 1)
+        ticks = np.append(tick1, tick2)
+    else:
+        ticks = np.linspace(lim[0], lim[1], n_ticks + 1)
+    cbar = fig.colorbar(cf, cax=cax, extend='both', ticks=ticks, norm=norm)
+    fmt_str = r'${:.' + str(n_decimals) + 'f}$'
+    cbar.ax.set_yticklabels([fmt_str.format(t) for t in ticks])
+    cbar.ax.yaxis.set_tick_params(pad=5, direction='out', size=1)  # your number may vary
+    cbar.ax.set_title(field_name, x=1, y=1.02, loc='left', size=12)
+
+    # plt.savefig(fname, transparent=True)
+    plt.savefig(fname, transparent=True, bbox_inches='tight')
+    plt.clf()
+    del fig, ax
     return
 
 def plot2Dseparation(u, file, **kwargs):
@@ -777,13 +848,34 @@ def CL_CD_theta_2(fy, fx, t, alphas, times, fname):
     ax2.plot(times, -l, color='red', ls='dashed', lw=1, label=r'$360-\theta_l$')
 
     fy_function = interp1d(t, fy, kind='cubic')
+    fx_function = interp1d(t, fx, kind='cubic')
     fy = fy_function(times)
-    ax3.scatter(fy, u + l, s=10, linewidths=1, color='black')
-    ax3.axhline(0, color='grey', lw=0.1)
-    ax3.axvline(0, color='grey', lw=0.1)
+    fx = fx_function(times)
 
-    ax1.grid(axis='both', alpha=0.5)
-    ax2.grid(axis='both', alpha=0.5)
+    ax3.scatter(fy, u + l, s=10, linewidths=1, color='black')
+
+    # d = {}
+    # d['t'] = times
+    # d['C_L'] = fy
+    # d['C_D'] = fx
+    # d[r'\theta_u'] = u
+    # d[r'360-\theta_l'] = -l
+    # df = pd.DataFrame.from_dict(d)
+    # df.to_csv('spreadsheets/figure7b.csv', index=False)
+    # d = {}
+    # d['t'] = times
+    # d['C_L'] = fy
+    # d['C_D'] = fx
+    # d[r'\theta_u'] = u
+    # d[r'360-\theta_l'] = -l
+    # df = pd.DataFrame.from_dict(d)
+    # df.to_csv('spreadsheets/figure7b.csv', index=False)
+
+    ax3.axhline(0, color='darkgrey', lw=0.1)
+    ax3.axvline(0, color='darkgrey', lw=0.1)
+
+    ax1.grid(axis='both', color='darkgrey', lw=0.1)
+    ax2.grid(axis='both', color='darkgrey', lw=0.1)
 
     ax1.tick_params(bottom=True, top=True, right=True, which='both', direction='in', length=2)
     ax2.tick_params(bottom=True, top=True, right=True, which='both', direction='in', length=2)
@@ -796,11 +888,11 @@ def CL_CD_theta_2(fy, fx, t, alphas, times, fname):
     ax2.yaxis.set_ticks([100, 120, 140, 160])
     ax2.set_xlabel(r'$tU/D$')
     ax3.set_xlabel(r'$C_L$')
-    # ax3.set_ylabel(r'$\theta_l+\theta_u$') #labelpad=-3 for 0.5
-    # ax3.set_ylim(-24,24) #0.5
-    # ax3.set_xlim(-1.8,1.8)
-    ax3.set_ylim(-9,9) #pi
-    ax3.set_xlim(-0.8,0.8)
+    ax3.set_ylabel(r'$\theta_l+\theta_u$') #labelpad=-3 for 0.5
+    ax3.set_ylim(-24,24) #0.5
+    ax3.set_xlim(-1.8,1.8) #0.5
+    # ax3.set_ylim(-9,9) #pi
+    # ax3.set_xlim(-0.8,0.8) #pi
 
     leg1 = ax1.legend(loc='lower left')
     leg1.get_frame().set_edgecolor('black')
@@ -840,7 +932,8 @@ def plotCL(fy, t, file, **kwargs):
 
     # Set limits
     ax.set_xlim(min(t), max(t))
-    ax.set_ylim(1.5*min(fy), 1.5*max(fy))
+    # ax.set_ylim(1.5*min(fy), 1.5*max(fy))
+    ax.set_ylim(-2.5, 2.5)
 
     # Edit frame, labels and legend
     ax.axhline(linewidth=1)
@@ -946,18 +1039,29 @@ def plotTKEspatial_list(file, tke_tuple_list, **kwargs):
     # Show lines
     tke_list = []
     i = 0
+    d = {}
     for tke_tuple in tke_tuple_list:
-        label = tke_tuple[0]
+        label = tke_tuple[0][:-1]
         tke = tke_tuple[1]
         if 'xD_min' in kwargs:
             x = x[x > kwargs['xD_min']]
             tke = tke[-x.size:]
+        if 'pi' in label:
+            label = '\pi'
         label = '$'+label+'$'
         color = colors[i]
         plt.plot(x, tke, color=color, lw=1.5, label=label, marker=markers[i], markevery=50, markersize=4)
         tke_list.append(tke)
+
+        d['x'] = x
+        d[label[1:-1]] = tke
+
         i += 1
 
+    df = pd.DataFrame.from_dict(d)
+    df.to_csv('spreadsheets/figure5b.csv', index=False)
+    
+    
     # Set limits
     ylims = kwargs.get('ylims', [np.min(tke_list),  np.max(tke_list)])
     print(ylims)
@@ -986,7 +1090,7 @@ def plotTKEspatial_list(file, tke_tuple_list, **kwargs):
     ax.tick_params(bottom="on", top="on", right="on", which='both', direction='in', length=2)
 
     # Show plot and save figure
-    plt.show()
+    # plt.show()
     plt.savefig(file, transparent=True, bbox_inches='tight')
     plt.clf()
     return
@@ -1281,12 +1385,14 @@ def plotXYSpatial_list(file, y_tuple_list, **kwargs):
         xmin, xmax = kwargs['x'][0], kwargs['x'][1]
     ylog = kwargs.get('ylog', False)
     ylabel = '$' + kwargs.get('ylabel','K') + '$'
+    # xmax=11.83
+    # print(xmin, xmax, N)
     x = np.linspace(xmin, xmax, N)
 
     # Show lines
     y_list = []
-    i = 0
-    for y_tuple in y_tuple_list:
+    d = {}
+    for y_tuple in enumerate(y_tuple_list):
         label = y_tuple[0]
         if 'piD' in label: label = '\pi'
         else: label = label[:-1]
@@ -1301,7 +1407,12 @@ def plotXYSpatial_list(file, y_tuple_list, **kwargs):
         plt.plot(x, y, color=color, lw=1, label=label, marker=markers[i],
                  markevery=50, markersize=4)#, markeredgecolor = 'black', markeredgewidth=0.1)
         y_list.append(y)
-        i += 1
+
+        # d['x'] = x
+        # d[label[1:-1]] = y
+
+    # df = pd.DataFrame.from_dict(d)
+    # df.to_csv('spreadsheets/figure9b.csv', index=False)
 
     # Edit figure, axis, limits
     ax.set_xlim(min(x), max(x))
@@ -1331,8 +1442,7 @@ def plotXYSpatial_list(file, y_tuple_list, **kwargs):
 
     ax.tick_params(bottom="on", top="on", right="on", which='both', direction='in', length=2)
 
-    # Show plot and save figure
-    plt.show()
+    # Save figure
     plt.savefig(file, transparent=True, bbox_inches='tight')
     plt.clf()
     return
@@ -1660,15 +1770,17 @@ def plotLogLogTimeSpectra_list_cascade(file, uk_tuple_list, freqs_list):
         color = colors[i]
         plt.loglog(freqs_list[i], uk, color=color, lw=0.5, label=label)
 
-
     for i in np.arange(5):
         x, y = loglogLine(p2=(1.e2, 1e-11*10**i), p1x=1e-2, m=-5/3)
-        plt.loglog(x, y, color='black', lw=0.5, ls='dotted', alpha=0.3)
+        # plt.loglog(x, y, color='black', lw=0.5, ls='dotted', alpha=0.3)
+        plt.loglog(x, y, color='darkgrey', lw=0.3, ls='dotted')
     for i in np.arange(2):
-        x, y = loglogLine(p2=(1.2e2, 1e-16 * 100 ** i), p1x=1e-3, m=-3)
-        plt.loglog(x, y, color='black', lw=0.5, ls='dashdot', alpha=0.3)
+        # x, y = loglogLine(p2=(1.2e2, 1e-16 * 100 ** i), p1x=1e-3, m=-3)
+        # plt.loglog(x, y, color='black', lw=0.5, ls='dashdot', alpha=0.3)
+        # plt.loglog(x, y, color='darkgrey', lw=0.2, ls='dashdot')
         x, y = loglogLine(p2=(1.2e2, 1e-17*100**i), p1x=1e-2, m=-3.66)
-        plt.loglog(x, y, color='black', lw=0.5, ls='dashed', alpha=0.3)
+        # plt.loglog(x, y, color='black', lw=0.5, ls='dashed', alpha=0.3)
+        plt.loglog(x, y, color='darkgrey', lw=0.3, ls='dashed')
 
 
     # Set limits
@@ -1812,16 +1924,23 @@ def plotLumleysTriangle_list(file, eta_tuple_list, xi_tuple_list):
     plt.plot([0,1/3], [0,1/3], color='black', lw=0.5)
 
     # Show lines
-    i = 0
-    for eta in eta_tuple_list:
+    # d0 = {}
+    for i, eta in enumerate(eta_tuple_list):
         label = eta[0]
-        # if 'piD' in label: label = '\pi'
-        # else: label = label[:-1]
+        if 'piD' in label: label = '\pi'
+        else: label = label[:-1]
         eta = eta[1]
         xi = xi_tuple_list[i][1]
         label = r'$'+label+'$'
         plt.scatter(xi, eta, marker=markers[i], c=colors[i], s=10, linewidths=0.1, label=label, edgecolor = 'black')
-        i += 1
+        # d0[label[1:-1]] = (xi, eta)
+
+    # d = {}
+    # for k,v in d0.items():
+    #     d[r'\xi'] = v[0]
+    #     d[r'\eta'] = v[1]
+    #     df = pd.DataFrame.from_dict(d)
+    #     df.to_csv('spreadsheets/figure8d_'+k+'.csv', index=False)
 
     # Set limits
     ax.set_ylim(0, 0.35)
