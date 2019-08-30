@@ -51,23 +51,29 @@ def decomp_z(u):
         return u_avg, u_f
 
 
-def ddx(u):
+def ddx(u, x=None):
     """
     :param u: n-dimensional field.
     :return: the first-order derivative in the i direction of (n>=1 dimensional) field.
     """
-    return np.gradient(u, axis=0, edge_order=2)
+    if x is not None:
+        return np.gradient(u, x, axis=0, edge_order=2)
+    else:
+        return np.gradient(u, axis=0, edge_order=2)
 
 
-def ddy(u):
+def ddy(u, y=None):
     """
     :param u: n-dimensional field.
     :return: the first-order derivative in the j direction of (n>=2 dimensional) field.
     """
-    return np.gradient(u, axis=1, edge_order=2)
+    if y is not None:
+        return np.gradient(u, y, axis=1, edge_order=2)
+    else:
+        return np.gradient(u, axis=1, edge_order=2)
 
 
-def ddz(u):
+def ddz(u, z=None):
     """
     :param u: n-dimensional field.
     :return: the first-order derivative in the k direction of (n>=3 dimensional) field.
@@ -76,14 +82,20 @@ def ddz(u):
         u_temp = np.zeros((u.shape[0], u.shape[1], u.shape[2]+2))
         u_temp[:, :, 1:-1], u_temp[:, :, 0], u_temp[:, :, -1] = u, u[:, :, -1], u[:, :, 0]
         del u
-        dudz = np.gradient(u_temp, axis=2, edge_order=2)
+        if z is not None:
+            dudz = np.gradient(u_temp, z, axis=2, edge_order=2)
+        else:
+            dudz = np.gradient(u_temp, axis=2, edge_order=2)
         del u_temp
         return dudz[:, :, 1:-1]
     else:
-        return np.gradient(u, axis=2, edge_order=2)
+        if z is not None:
+            return np.gradient(u, z, axis=2, edge_order=2)
+        else:
+            return np.gradient(u, axis=2, edge_order=2)
 
 
-def vortZ(u, v):
+def vortZ(u, v, **kwargs):
     """
     :param u: x component of the velocity vector field.
     :param v: y component of the velocity vector field.
@@ -92,10 +104,12 @@ def vortZ(u, v):
     # if not (len(u.shape)==2 and len(v.shape)==2):
     #     raise ValueError("Fields must be two-dimensional")
     # else:
-    return ddx(v)-ddy(u)
+    x = kwargs.get('x', None)
+    y = kwargs.get('y', None)
+    return ddx(v, x)-ddy(u, y)
 
 
-def vort(u, v, w):
+def vort(u, v, w, **kwargs):
     """
     :param u: x component of the velocity vector field.
     :param v: y component of the velocity vector field.
@@ -106,7 +120,10 @@ def vort(u, v, w):
     if not (len(u.shape)==3 and len(v.shape)==3 and len(w.shape)==3):
         raise ValueError("Fields must be three-dimensional")
     else:
-        return ddy(w)-ddz(v), ddz(u)-ddx(w), ddx(v)-ddy(u)
+        x = kwargs.get('x', None)
+        y = kwargs.get('y', None)
+        z = kwargs.get('z', None)
+        return ddy(w, y) - ddz(v, z), ddz(u, z) - ddx(w, x), ddx(v, x) - ddy(u, y)
 
 def grad(u):
     """

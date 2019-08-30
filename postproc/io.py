@@ -323,6 +323,37 @@ def read_vti(fname):
 
     return np.transpose(np.array(vec), (0,3,2,1)), np.transpose(sca, (0,3,2,1)), grid3D
 
+def read_vtr(fname):
+    reader = vtk.vtkXMLPRectilinearGridReader()
+    reader.SetFileName(fname)
+    reader.Update()
+    data = reader.GetOutput()
+
+    sh = data.GetDimensions()[::-1]
+    ndims = len(sh)
+    print(sh, ndims)
+
+    pointData = data.GetPointData()
+
+    # get vector field
+    v = np.array(pointData.GetVectors("Velocity")).reshape(sh + (ndims,))
+    vec = []
+    for d in range(ndims):
+        a = v[..., d]
+        vec.append(a)
+    vec = np.array(vec)
+    print('vec', vec.shape)
+    # get scalar field
+    sca = np.array(pointData.GetScalars('Pressure')).reshape(sh + (1,))
+
+    # get grid
+    x = np.array(data.GetXCoordinates())
+    y = np.array(data.GetYCoordinates())
+    z = np.array(data.GetZCoordinates())
+    print(x.shape, y.shape, z.shape)
+
+    return np.transpose(vec, (0,3,2,1)), np.transpose(sca, (0,3,2,1)), np.array([x, y, z])
+
 
 def pvd_parser(fname, n): # 'n' is the number of snapshots contained in fname
     times = []

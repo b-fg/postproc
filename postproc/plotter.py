@@ -348,11 +348,11 @@ def plot2Dvort(u, cmap, lvls, lim, file, **kwargs):
     mpl.rc('ytick', labelsize=6)
 
     N, M = u.shape[0], u.shape[1]
-    if not 'x' in kwargs:
+    if not 'x_lim' in kwargs:
         xmin, xmax = 0, N-1
     else:
         xmin, xmax = kwargs['x'][0], kwargs['x'][1]
-    if not 'y' in kwargs:
+    if not 'y_lim' in kwargs:
         ymin, ymax = -M/2, M/2-1
     else:
         ymin, ymax = kwargs['y'][0], kwargs['y'][1]
@@ -362,9 +362,17 @@ def plot2Dvort(u, cmap, lvls, lim, file, **kwargs):
     yshift = kwargs.get('yshift', 0)
 
     # Uniform grid generation
-    x, y = np.linspace(xmin/scaling, xmax/scaling, N), np.linspace(ymin/scaling, ymax/scaling, M)
-    x, y = x+xshift, y+yshift
-    x, y = np.meshgrid(x, y)
+    if 'x' not in kwargs and 'y' not in kwargs:
+        x = np.linspace(xmin/scaling, xmax/scaling, N)
+        y = np.linspace(ymin/scaling, ymax/scaling, M)
+        x, y = x + xshift, y + yshift
+        x, y = np.meshgrid(x, y)
+    elif 'x' in kwargs and 'y' in kwargs:
+        x = np.transpose(kwargs.get('x'))/scaling
+        y = np.transpose(kwargs.get('y'))/scaling
+    else:
+        raise ValueError('Pass both x and y, or none.')
+
     u = np.transpose(u)
 
     # Matplotlib definitions
@@ -383,8 +391,13 @@ def plot2Dvort(u, cmap, lvls, lim, file, **kwargs):
     plt.ylim(np.min(y), np.max(y))
 
     # ax.xaxis.set_ticks(np.arange(0.5, 2.5, 0.5))
-    ax.yaxis.set_ticks([-2,0,2])
+    # ax.yaxis.set_ticks([-2,0,2])
     ax.tick_params(bottom="on", top="on", right="on", which='both', direction='in', length=2)
+
+    # -- Set title, circles and text
+    grey_color = '#dedede'
+    cyl = patches.Circle((0, 0), 0.52, linewidth=0.2, edgecolor='black', facecolor=grey_color, zorder=9999)
+    ax.add_patch(cyl)
 
     # Show, save and close figure
     plt.savefig(file, transparent=True, bbox_inches='tight')
