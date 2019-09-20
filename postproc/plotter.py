@@ -35,8 +35,8 @@ markers = ['|', 's', '^', 'v', 'x', 'o', '*']
 # markers = ['s', '^', 'v', 'x', 'o', '*']
 
 # Functions
-# ------------------------------------------------------ COUNTOURS
-def plot2D(u, cmap, lvls, lim, file, **kwargs):
+# ------------------------------------------------------
+def plot_2D(u, file, **kwargs):
     """
     Return nothing and saves the figure in the specified file name.
     Args:
@@ -53,123 +53,217 @@ def plot2D(u, cmap, lvls, lim, file, **kwargs):
     # Internal imports
     import matplotlib.colors as colors
     from mpl_toolkits.axes_grid1 import make_axes_locatable
+    plt.rc('font', size=9)
+    mpl.rc('xtick', labelsize=9)
+    mpl.rc('ytick', labelsize=9)
 
-    N, M = u.shape[0], u.shape[1]
-    if not 'x' in kwargs:
-        xmin, xmax = 0, N-1
-    else:
-        xmin, xmax = kwargs['x'][0], kwargs['x'][1]
-    if not 'y' in kwargs:
-        ymin, ymax = -M/2, M/2-1
-    else:
-        ymin, ymax = kwargs['y'][0], kwargs['y'][1]
-    annotate = kwargs.get('annotate', False)
+    levels = kwargs.get('levels', 50)
+    lim = kwargs.get('lim', [np.min(u), np.max(u)])
+    cmap = kwargs.get('cmap', 'Blues')
     scaling = kwargs.get('scaling', 1)
     xshift = kwargs.get('xshift', 0)
     yshift = kwargs.get('yshift', 0)
+    field_name = kwargs.get('field_name', '')
+    n_ticks = kwargs.get('n_ticks', 20)
+    n_decimals = kwargs.get('n_decimals', 2)
+    annotate = kwargs.get('annotate', False)
+    N, M = u.shape[0], u.shape[1]
 
-    # Uniform grid generation
-    x, y = np.linspace(xmin/scaling, xmax/scaling, N), np.linspace(ymin/scaling, ymax/scaling, M)
-    x, y = x+xshift, y+yshift
-    x, y = np.meshgrid(x, y)
-    u = np.transpose(u)
+    # Create uniform grid
+    if 'grid' in kwargs:
+        grid = kwargs['grid']
+        x, y = grid[0] / scaling, grid[1] / scaling
+    elif 'x' in kwargs and 'y' in kwargs:
+        x = np.transpose(kwargs.get('x')) / scaling + xshift
+        y = np.transpose(kwargs.get('y')) / scaling + yshift
+        x, y = np.meshgrid(x, y)
+    else:
+        xmin, xmax = 0, N - 1
+        ymin, ymax = -M / 2, M / 2 - 1
+        x, y = np.linspace(xmin / scaling, xmax / scaling, N), np.linspace(ymin / scaling, ymax / scaling, M)
+        x, y = x + xshift, y + yshift
+        x, y = np.meshgrid(x, y)
 
     # Matplotlib definitions
-    fig1 = plt.gcf()
-    ax = plt.gca()
+    fig, ax = plt.subplots(1, 1)
 
     # Create contourf given a normalized (norm) colormap (cmap)
+    if lim[0] < 0:
+        clevels = levels
+    else:
+        extra_levels = 5
+        dl = levels[1] - levels[0]
+        clevels = np.append(levels, np.linspace(lim[1] + dl, lim[1] + extra_levels * dl, extra_levels))
+
     norm = colors.Normalize(vmin=lim[0], vmax=lim[1])
-    # ax.contour(x, y, u, lvls, linewidths=0.2, colors='k')
-    cf = ax.contourf(x, y, u, lvls, vmin=lim[0], vmax=lim[1], norm=norm, cmap=cmap)
+    ax.contour(x, y, u, clevels, linewidths=0.2, colors='k')
+    cf = ax.contourf(x, y, u, levels, vmin=lim[0], vmax=lim[1], norm=norm, cmap=cmap, extend='both')
 
-    ax.tick_params(bottom="on", top="on", right="on", which='both', direction='in', length=2)
-
-    # Scale contourf and set limits
-    plt.axis('scaled')
+    # Format figure
+    plt.axis(1)
     plt.xlim(np.min(x), np.max(x))
     plt.ylim(np.min(y), np.max(y))
+    # ax.xaxis.set_ticks(np.arange(0.5, 2.5, 0.5))
+    ax.yaxis.set_ticks([-2, 0, 2])
+    ax.tick_params(bottom="on", top="on", right="on", which='both', direction='in', length=2)
 
-    # Scale colorbar to contourf
-    divider = make_axes_locatable(ax)
-    cax = divider.append_axes("right", size="5%", pad=0.02, aspect=10)
-    cbax = plt.colorbar(cf, cax=cax).ax
-    mpl.colorbar.ColorbarBase(cbax, norm=norm, cmap=cmap)
+    # -- Set title, circles and text
+    grey_color = '#dedede'
+    cyl = patches.Circle((0, 0), 0.51, linewidth=0.2, edgecolor='black', facecolor=grey_color, zorder=9999)
+    ax.add_patch(cyl)
+
+    # -- Add colorbar
+    # divider = make_axes_locatable(ax)
+    # cax = divider.append_axes("right", size="5%", pad=0.0, aspect=15)
+    # if lim[0] < 0:
+    #     tick1 = np.linspace(lim[0], 0, n_ticks/2)
+    #     dl = tick1[1]-tick1[0]
+    #     tick2 = np.linspace(dl, lim[1], n_ticks/2-1)
+    #     ticks = np.append(tick1, tick2)
+    # else:
+    #     ticks = np.linspace(lim[0], lim[1], n_ticks+1)
+    # cbar = fig.colorbar(cf, cax=cax, extend='both', ticks=ticks, norm=norm)
+    # fmt_str = r'${:.' + str(n_decimals) + 'f}$'
+    # cbar.ax.set_yticklabels([fmt_str.format(t) for t in ticks])
+    # cbar.ax.yaxis.set_tick_params(pad=5, direction='out', size=1)  # your number may vary
+    # cbar.ax.set_title(field_name, x= 1, y=1.02, loc='left', size=12)
 
     # Add annotation if desired
-    if annotate:
-        str_annotation = max_min_loc(u, xmin, ymin)
-        print(str_annotation)
-        ann_ax = fig1.add_subplot(133)
-        ann_ax.axis('off')
-        ann_ax.annotate(str_annotation, (0, 0),
-                        xycoords="axes fraction", va="center", ha="center",
-                        bbox=dict(boxstyle="round, pad=1", fc="w"))
+    # if annotate:
+    #     str_annotation = max_min_loc(u, xmin, ymin)
+    #     print(str_annotation)
+    #     ann_ax = fig1.add_subplot(133)
+    #     ann_ax.axis('off')
+    #     ann_ax.annotate(str_annotation, (0, 0),
+    #                     xycoords="axes fraction", va="center", ha="center",
+    #                     bbox=dict(boxstyle="round, pad=1", fc="w"))
 
     # Show, save and close figure
     plt.savefig(file, transparent=True, bbox_inches='tight')
-    plt.draw()
-    plt.show()
-    plt.clf()
+    # plt.draw()
+    # plt.clf()
     return
 
+def animate_2Dx2(a, b, file, **kwargs):
+    plt.rc('font', size=9)
+    mpl.rc('xtick', labelsize=9)
+    mpl.rc('ytick', labelsize=9)
 
-def plot2D_animation(u, cmap, lvls, lim, **kwargs):
-    import matplotlib.colors as colors
-    from mpl_toolkits.axes_grid1 import make_axes_locatable
-    import matplotlib.patches as patches
+    global c1, c2, cf1, cf2, cf
 
+    def anim(i):
+        global c1, c2, cf1, cf2, cf
+        for c in cf1.collections:
+            c.remove()  # removes only the contours, leaves the rest intact
+        for c in cf2.collections:
+            c.remove()  # removes only the contours, leaves the rest intact
+        for c in c1.collections:
+            c.remove()  # removes only the contours, leaves the rest intact
+        for c in c2.collections:
+            c.remove()  # removes only the contours, leaves the rest intact
 
-    N, M = u.shape[0], u.shape[1]
-    if not 'x' in kwargs:
-        xmin, xmax = 0, N-1
-    else:
-        xmin, xmax = kwargs['x'][0], kwargs['x'][1]
-    if not 'y' in kwargs:
-        ymin, ymax = -M/2, M/2-1
-    else:
-        ymin, ymax = kwargs['y'][0], kwargs['y'][1]
-    annotate = kwargs.get('annotate', False)
+        c1 = ax1.contour(x.T, y.T, a[i].T, clvls, linewidths=0.05, colors='k')
+        c2 = ax2.contour(x.T, y.T, b[i].T, clvls, linewidths=0.05, colors='k')
+        cf1 = ax1.contourf(x.T, y.T, a[i].T, levels, vmin=lim[0], vmax=lim[1], norm=norm, cmap=cmap, extend='both')
+        cf2 = ax2.contourf(x.T, y.T, b[i].T, levels, vmin=lim[0], vmax=lim[1], norm=norm, cmap=cmap, extend='both')
+
+        title = r'$t = ' + '{:.1f}'.format(time[i]) + '$'
+        ax1.set_title(title, size=12, y=1.03)
+        return [c1, c2, cf1, cf2]
+
+    k = len(a)  # Number of snapshots
+    print(k)
+    time = kwargs.get('time', np.arange(k))
+    levels = kwargs.get('levels', 50)
+    lim = kwargs.get('lim', [np.min(a[0]), np.max(a[0])])
+    cmap = kwargs.get('cmap', 'Blues')
     scaling = kwargs.get('scaling', 1)
     xshift = kwargs.get('xshift', 0)
     yshift = kwargs.get('yshift', 0)
+    field_name = kwargs.get('field_name', '')
+    n_ticks = kwargs.get('n_ticks', 20)
+    n_decimals = kwargs.get('n_decimals', 2)
+    fps = kwargs.get('fps', 8)
+    dpi = kwargs.get('dpi', 600)
+    N, M = a[0].shape[0], a[0].shape[1]
 
-    # Uniform grid generation
-    x, y = np.linspace(xmin/scaling, xmax/scaling, N), np.linspace(ymin/scaling, ymax/scaling, M)
-    x, y = x+xshift, y+yshift
-    x, y = np.meshgrid(x, y)
-    u = np.transpose(u)
+    # Create uniform grid
+    if 'grid' in kwargs:
+        grid = kwargs['grid']
+        x, y = grid[0] / scaling, grid[1] / scaling
+    elif 'x' in kwargs and 'y' in kwargs:
+        x = np.transpose(kwargs.get('x')) / scaling + xshift
+        y = np.transpose(kwargs.get('y')) / scaling + yshift
+        x, y = np.meshgrid(x, y)
+    else:
+        xmin, xmax = 0, N - 1
+        ymin, ymax = -M / 2, M / 2 - 1
+        x, y = np.linspace(xmin / scaling, xmax / scaling, N), np.linspace(ymin / scaling, ymax / scaling, M)
+        x, y = x + xshift, y + yshift
+        x, y = np.meshgrid(x, y)
 
-    # Matplotlib definitions
-    fig = plt.gcf()
-    ax = plt.gca()
+    fig, ax = plt.subplots(2, 1)
+    ax1, ax2 = ax[0], ax[1]
 
-    # Create contourf given a normalized (norm) colormap (cmap)
-    norm = colors.Normalize(vmin=lim[0], vmax=lim[1])
-    # ax.contour(x, y, u, lvls, linewidths=0.2, colors='k')
-    cf = ax.contourf(x, y, u, lvls, vmin=lim[0], vmax=lim[1], norm=norm, cmap=cmap)
+    if lim[0] < 0:
+        clvls = levels
+    else:
+        extra_levels = 5
+        dl = levels[1] - levels[0]
+        clvls = np.append(levels, np.linspace(lim[1] + dl, lim[1] + extra_levels * dl, extra_levels))
+    norm = mpl_colors.Normalize(vmin=lim[0], vmax=lim[1])
 
-    ax.tick_params(bottom="on", top="on", right="on", which='both', direction='in', length=2)
+    c1 = ax1.contour(x.T, y.T, a[0].T, clvls, linewidths=0.05, colors='k')
+    c2 = ax2.contour(x.T, y.T, b[0].T, clvls, linewidths=0.05, colors='k')
+    cf1 = ax1.contourf(x.T, y.T, a[0].T, levels, vmin=lim[0], vmax=lim[1], norm=norm, cmap=cmap, extend='both')
+    cf2 = ax2.contourf(x.T, y.T, b[0].T, levels, vmin=lim[0], vmax=lim[1], norm=norm, cmap=cmap, extend='both')
 
-    # Scale contourf and set limits
-    plt.axis('scaled')
+    cf = [c1, c2, cf1, cf2]
+
+    # Format figure
+    ax1.tick_params(bottom="on", top="on", right="on", which='both', direction='in', labelbottom='off', length=2)
+    ax1.set_xticklabels([])
+    ax2.tick_params(bottom="on", top="on", right="on", which='both', direction='in', length=2)
+    ax1.set_aspect(1)
+    ax2.set_aspect(1)
     plt.xlim(np.min(x), np.max(x))
     plt.ylim(np.min(y), np.max(y))
+    ax1.yaxis.set_ticks([-2, 0, 2])
+    ax2.yaxis.set_ticks([-2, 0, 2])
 
-    # Scale colorbar to contourf
-    divider = make_axes_locatable(ax)
-    cax = divider.append_axes("right", size="5%", pad=0.02, aspect=10)
-    cbax = plt.colorbar(cf, cax=cax).ax
-    mpl.colorbar.ColorbarBase(cbax, norm=norm, cmap=cmap)
-
-    # Add cylinder
+    # Set title, circles and text
+    title = r'$t = ' + '{:.1f}'.format(time[0]) + '$'
+    ax1.set_title(title, size=12, y=1.05)
     grey_color = '#dedede'
-    cyl = patches.Circle((0,0),scaling/2,linewidth=0.2,edgecolor='black',facecolor=grey_color)
-    ax.add_patch(cyl)
+    cyl1 = patches.Circle((0, 0), 0.5, linewidth=0.2, edgecolor='black', facecolor=grey_color, zorder=9999)
+    cyl2 = patches.Circle((0, 0), 0.5, linewidth=0.2, edgecolor='black', facecolor=grey_color, zorder=9999)
+    ax1.add_patch(cyl1)
+    ax2.add_patch(cyl2)
+    plt.subplots_adjust(hspace=0.05, bottom=0.15)
+    ax1.text(-1, 2.3, r'$0.5$')
+    ax2.text(-1, 2.3, r'$\pi$')
 
-    # Show, save and close figure
+    # Add colorbar
+    # if lim[0] < 0:
+    #     tick1 = np.linspace(lim[0], 0, n_ticks / 2)
+    #     dl = tick1[1] - tick1[0]
+    #     tick2 = np.linspace(dl, lim[1], n_ticks / 2 - 1)
+    #     ticks = np.append(tick1, tick2)
+    # else:
+    #     ticks = np.linspace(lim[0], lim[1], n_ticks + 1)
+    # cbar_ax = plt.colorbar(cf2, ax=[ax1, ax2], extend='both', norm=norm).ax
+    # cbar_ax.set_title(field_name, y=1.02, loc='left', size=12)
+    # fmt_str = r'${:.' + str(n_decimals) + 'f}$'
+    # cbar_ax.set_yticklabels([fmt_str.format(t) for t in ticks])
+    # cbar_ax.yaxis.set_tick_params(pad=5, direction='out', size=1)  # your number may vary
+    # cbar_ax.set_title(field_name, x=1, y=1.02, loc='left', size=12)
 
-    return fig, ax, cf
+    # Animate
+    writer = animation.FFMpegWriter(fps=fps, extra_args=['-vcodec', 'libx264'])
+    anim = animation.FuncAnimation(fig, anim, frames=len(a))
+    anim.save(file, writer=writer, dpi=dpi)
+    return
+
 
 def plot2D_uv(u, cmap, lvls, lim, file, **kwargs):
     """
@@ -247,12 +341,10 @@ def plot2D_uv(u, cmap, lvls, lim, file, **kwargs):
     # cbax = plt.colorbar(cf, cax=cax).ax
     # mpl.colorbar.ColorbarBase(cbax, norm=norm, cmap=cmap)
 
-    # Add annotation if desired
-
     cyl = patches.Circle((0, 0), radius=0.5, linewidth=0.5, edgecolor='black', facecolor='white', zorder=10, alpha=1)
     ax.add_patch(cyl)
 
-
+    # Add annotation if desired
     if annotate:
         str_annotation = max_min_loc(u, xmin, ymin)
         print(str_annotation)
@@ -268,7 +360,6 @@ def plot2D_uv(u, cmap, lvls, lim, file, **kwargs):
     # plt.show()
     plt.clf()
     return
-
 
 
 def plot2D_circulation(u, cmap, lvls, lim, file, **kwargs):
@@ -391,12 +482,12 @@ def plot2Dvort(u, cmap, lvls, lim, file, **kwargs):
     plt.ylim(np.min(y), np.max(y))
 
     # ax.xaxis.set_ticks(np.arange(0.5, 2.5, 0.5))
-    # ax.yaxis.set_ticks([-2,0,2])
+    ax.yaxis.set_ticks([-2,0,2])
     ax.tick_params(bottom="on", top="on", right="on", which='both', direction='in', length=2)
 
     # -- Set title, circles and text
     grey_color = '#dedede'
-    cyl = patches.Circle((0, 0), 0.52, linewidth=0.2, edgecolor='black', facecolor=grey_color, zorder=9999)
+    cyl = patches.Circle((0, 0), 0.51, linewidth=0.2, edgecolor='black', facecolor=grey_color, zorder=9999)
     ax.add_patch(cyl)
 
     # Show, save and close figure
@@ -405,76 +496,6 @@ def plot2Dvort(u, cmap, lvls, lim, file, **kwargs):
     # plt.clf()
     return
 
-def plot2Dlive(a, fname, **kwargs):
-    fig, ax = plt.subplots(1, 1)
-
-    N, M = a.shape[0], a.shape[1]
-    if not 'x' in kwargs:
-        xmin, xmax = 0, N - 1
-    else:
-        xmin, xmax = kwargs['x'][0], kwargs['x'][1]
-    if not 'y' in kwargs:
-        ymin, ymax = -M / 2, M / 2 - 1
-    else:
-        ymin, ymax = kwargs['y'][0], kwargs['y'][1]
-
-    levels = kwargs.get('levels', 50)
-    lim = kwargs.get('lim', [np.min(a), np.max(a)])
-    cmap = kwargs.get('cmap', 'Blues')
-    scaling = kwargs.get('scaling', 1)
-    xshift = kwargs.get('xshift', 0)
-    yshift = kwargs.get('yshift', 0)
-    field_name = kwargs.get('field_name', '')
-    n_ticks = kwargs.get('n_ticks', 10)
-    n_decimals = kwargs.get('n_decimals', 2)
-
-    x, y = np.linspace(xmin / scaling, xmax / scaling, N), np.linspace(ymin / scaling, ymax / scaling, M)
-    x, y = x + xshift, y + yshift
-    x, y = np.meshgrid(x, y)
-
-    norm = mpl_colors.Normalize(vmin=lim[0], vmax=lim[1])
-
-    if lim[0] < 0:
-        clvls = levels
-    else:
-        extra_levels = 5
-        dl = levels[1] - levels[0]
-        clvls = np.append(levels, np.linspace(lim[1] + dl, lim[1] + extra_levels * dl, extra_levels))
-    ax.contour(x, y, a.T, clvls, linewidths=0.05, colors='k')
-    cf = ax.contourf(x, y, a.T, levels, vmin=lim[0], vmax=lim[1], cmap=cmap, norm=norm, extend='both')
-
-    # Format figure
-    ax.tick_params(bottom="on", top="on", right="on", which='both', direction='in', labelbottom='on', length=2)
-    ax.set_aspect(1)
-    plt.xlim(np.min(x), np.max(x))
-    plt.ylim(np.min(y), np.max(y))
-    # ax.yaxis.set_ticks([-2, 0, 2])
-    # ax.xaxis.set_ticks([0, 2, 4, 6, 8, 10])
-    # -- Set title, circles and text
-    grey_color = '#dedede'
-    cyl = patches.Circle((0, 0), 0.5, linewidth=0.2, edgecolor='black', facecolor=grey_color, zorder=9999)
-    ax.add_patch(cyl)
-    # -- Add colorbar
-    divider = make_axes_locatable(ax)
-    cax = divider.append_axes("right", size="5%", pad=0.0, aspect=15)
-    if lim[0] < 0:
-        tick1 = np.linspace(lim[0], 0, n_ticks / 2)
-        dl = tick1[1] - tick1[0]
-        tick2 = np.linspace(dl, lim[1], n_ticks / 2 - 1)
-        ticks = np.append(tick1, tick2)
-    else:
-        ticks = np.linspace(lim[0], lim[1], n_ticks + 1)
-    cbar = fig.colorbar(cf, cax=cax, extend='both', ticks=ticks, norm=norm)
-    fmt_str = r'${:.' + str(n_decimals) + 'f}$'
-    cbar.ax.set_yticklabels([fmt_str.format(t) for t in ticks])
-    cbar.ax.yaxis.set_tick_params(pad=5, direction='out', size=1)  # your number may vary
-    cbar.ax.set_title(field_name, x=1, y=1.02, loc='left', size=12)
-
-    # plt.savefig(fname, transparent=True)
-    plt.savefig(fname, transparent=True, bbox_inches='tight')
-    plt.clf()
-    del fig, ax
-    return
 
 def plot2Dseparation(u, file, **kwargs):
     """
@@ -558,8 +579,6 @@ def plot2Dseparation(u, file, **kwargs):
 
 # ------------------------------------------------------
 def two_point_correlations_single(a, fname):
-    from matplotlib.gridspec import GridSpec
-
     n_points = len(a)
     fig = plt.gcf()
     ax = plt.gca()
@@ -582,8 +601,6 @@ def two_point_correlations_single(a, fname):
     leg1.get_frame().set_linewidth(0.5)
     leg1.get_frame().set_alpha(0.5)
 
-
-
     ax.set_ylabel(r'$\left\langle v_1, v_2 \right\rangle$')
     ax.set_xlabel(r'$\log d/D$')
 
@@ -595,7 +612,6 @@ def two_point_correlations_single(a, fname):
 
     fig, ax = makeSquare(fig,ax)
     plt.savefig(fname, transparent=True, bbox_inches='tight')
-
     return
 
 
@@ -651,7 +667,6 @@ def two_point_correlations(a, fname):
     fig.set_size_inches(fig_size[1] * 1.1, fig_size[1] * 1.1)
     fig.tight_layout()
     plt.savefig(fname, transparent=True, bbox_inches='tight')
-
     return
 
 
@@ -708,7 +723,6 @@ def two_point_correlations_3_horizontal(a, fname):
     fig.set_size_inches(fig_size[1] * 2, fig_size[1] * 2/2.8)
     fig.tight_layout()
     plt.savefig(fname, transparent=True, bbox_inches='tight')
-
     return
 
 
@@ -762,8 +776,8 @@ def two_point_correlations_3_vertical(a, fname):
     fig.set_size_inches(fig_size[1]/2, fig_size[1])
     fig.tight_layout()
     plt.savefig(fname, transparent=True, bbox_inches='tight')
-
     return
+
 
 def CL_CD_theta(fy, fx, t, alphas, times, fname):
     from scipy.signal import savgol_filter, resample
@@ -1110,9 +1124,6 @@ def plotTKEspatial_list(file, tke_tuple_list, **kwargs):
 
 
 def plotProfiles(file, profiles_tuple_list, **kwargs):
-    """
-
-    """
     ax = plt.gca()
     fig  = plt.gcf()
 
@@ -1168,11 +1179,7 @@ def plotProfiles(file, profiles_tuple_list, **kwargs):
 
 
 def plotProfiles_multiple(file, tuple_profiles_tuple_list, **kwargs):
-    """
-
-    """
     from collections import OrderedDict
-    from mpl_toolkits.mplot3d import Axes3D
 
     fig  = plt.gcf()
     ax = plt.gca(projection='3d')
@@ -1239,8 +1246,6 @@ def plotProfiles_multiple(file, tuple_profiles_tuple_list, **kwargs):
     plt.clf()
     return
 
-
-
 # ------------------------------------------------------ x-y
 def plotXYSpatial(y, label, file, **kwargs):
     """
@@ -1289,6 +1294,7 @@ def plotXYSpatial(y, label, file, **kwargs):
     plt.savefig(file, transparent=True, bbox_inches='tight')
     return
 
+
 def plotScatter(x, y, cases, file):
     """
     Generate a x-y plot in space
@@ -1326,6 +1332,7 @@ def plotScatter(x, y, cases, file):
     # Show plot and save figure
     plt.savefig(file, transparent=True, bbox_inches='tight')
     return
+
 
 def plotScatter2(x1, x2, y, cases, file):
     """
@@ -1460,6 +1467,7 @@ def plotXYSpatial_list(file, y_tuple_list, **kwargs):
     plt.clf()
     return
 
+
 def velocity_profiles(file, profiles_tuple_list, **kwargs):
     """
     Similar to plotXYSpatial_list just for a specific test case
@@ -1505,6 +1513,7 @@ def velocity_profiles(file, profiles_tuple_list, **kwargs):
     plt.savefig(file, transparent=True, bbox_inches='tight')
     plt.clf()
     return
+
 
 def plotCp_list(file, y_tuple_list, x_list, **kwargs):
     """
@@ -1556,7 +1565,6 @@ def plotCp_list(file, y_tuple_list, x_list, **kwargs):
     plt.show()
     plt.savefig(file, transparent=True, bbox_inches='tight')
     return
-
 
 # ------------------------------------------------------ LogLog Spatial
 def plotLogLogSpatialSpectra(file, wn, uk):
@@ -1825,6 +1833,7 @@ def plotLogLogTimeSpectra_list_cascade(file, uk_tuple_list, freqs_list):
     plt.savefig(file, transparent=True, bbox_inches='tight')
     plt.clf()
     return
+
 
 def plotLogLogSpatialSpectra_list_cascade(file, uk_tuple_list, freqs_list):
     """

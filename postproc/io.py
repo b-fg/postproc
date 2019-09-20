@@ -262,28 +262,26 @@ def readTimeSeries(file):
     """
     return np.loadtxt(file)
 
+
 def readPressureArcLength(file):
     p, L = np.loadtxt(file, unpack=True, skiprows=1, delimiter=',')
     return p, L
+
 
 def importExpCpTheta(file):
     theta, cp = np.loadtxt(file, unpack=True, delimiter=',')
     return theta, cp
 
-def read_vtk(fname):
+
+def read_vti(file):
     reader = vtk.vtkXMLPImageDataReader()
-    reader.SetFileName(fname)
+    reader.SetFileName(file)
     reader.Update()
     data = reader.GetOutput()
+    pointData = data.GetPointData()
 
     sh = data.GetDimensions()[::-1]
     ndims = len(sh)
-    bounds = data.GetBounds()  # (Xmin,Xmax,Ymin,Ymax,Zmin,Zmax)
-    # nPoints = data.GetNumberOfPoints()
-    (xmin, xmax, ymin, ymax, zmin, zmax) = data.GetBounds()  # (Xmin,Xmax,Ymin,Ymax,Zmin,Zmax)
-    grid3D = np.mgrid[xmin:xmax + 1, ymin:ymax + 1, zmin:zmax + 1]
-    # grid3D = np.transpose(grid3D, ())
-    pointData = data.GetPointData()
 
     # get vector field
     v = np.array(pointData.GetVectors("Velocity")).reshape(sh + (ndims,))
@@ -294,46 +292,23 @@ def read_vtk(fname):
     # get scalar field
     sca = np.array(pointData.GetScalars('Pressure')).reshape(sh + (1,))
 
-    return np.transpose(np.array(vec), (0,3,2,1)), np.transpose(sca, (0,3,2,1)), grid3D
-
-
-def read_vti(fname):
-    reader = vtk.vtkXMLPImageDataReader()
-    reader.SetFileName(fname)
-    reader.Update()
-    data = reader.GetOutput()
-
-    sh = data.GetDimensions()[::-1]
-    ndims = len(sh)
-    bounds = data.GetBounds()  # (Xmin,Xmax,Ymin,Ymax,Zmin,Zmax)
+    # Generate grid
     # nPoints = data.GetNumberOfPoints()
-    (xmin, xmax, ymin, ymax, zmin, zmax) = data.GetBounds()  # (Xmin,Xmax,Ymin,Ymax,Zmin,Zmax)
+    (xmin, xmax, ymin, ymax, zmin, zmax) = data.GetBounds()
     grid3D = np.mgrid[xmin:xmax + 1, ymin:ymax + 1, zmin:zmax + 1]
-    # grid3D = np.transpose(grid3D, ())
-    pointData = data.GetPointData()
-
-    # get vector field
-    v = np.array(pointData.GetVectors("Velocity")).reshape(sh + (ndims,))
-    vec = []
-    for d in range(ndims):
-        a = v[..., d]
-        vec.append(a)
-    # get scalar field
-    sca = np.array(pointData.GetScalars('Pressure')).reshape(sh + (1,))
 
     return np.transpose(np.array(vec), (0,3,2,1)), np.transpose(sca, (0,3,2,1)), grid3D
+
 
 def read_vtr(fname):
     reader = vtk.vtkXMLPRectilinearGridReader()
     reader.SetFileName(fname)
     reader.Update()
     data = reader.GetOutput()
+    pointData = data.GetPointData()
 
     sh = data.GetDimensions()[::-1]
     ndims = len(sh)
-    print(sh, ndims)
-
-    pointData = data.GetPointData()
 
     # get vector field
     v = np.array(pointData.GetVectors("Velocity")).reshape(sh + (ndims,))
@@ -367,10 +342,12 @@ def pvd_parser(fname, n): # 'n' is the number of snapshots contained in fname
         files.append(str(l[4].split("\"")[1]))
     return times, files
 
+
 def write_object(obj, fname):
     with open(fname, 'wb') as output:  # Overwrites any existing file.
         pickle.dump(obj, output, protocol=pickle.HIGHEST_PROTOCOL)
     return
+
 
 def read_object(fname):
     with open(fname, 'rb') as input:  # Overwrites any existing file.
