@@ -309,11 +309,42 @@ def scatter(x, y, file='test.pdf', **kwargs):
 	fig, ax = makeSquare(fig,ax)
 	plt.xlabel(r'$' + x_label + '$')
 	plt.ylabel(r'$' + y_label + '$')
-
+	ax.xaxis.set_zorder(99999)
+	ax.yaxis.set_zorder(99999)
 	# Show plot and save figure
 	plt.savefig(file, transparent=True, bbox_inches='tight')
 	return
 
+
+def density2D(x, y, file='test.pdf', nbins=20, **kwargs):
+	from scipy.stats import kde
+
+	x_label = kwargs.get('x_label', None)
+	y_label = kwargs.get('y_label', None)
+	x_lims = kwargs.get('x_lims', None)
+	y_lims = kwargs.get('y_lims', None)
+
+	k = kde.gaussian_kde(np.array([x.flatten(),y.flatten()]))
+	xi, yi = np.mgrid[x.min():x.max():nbins * 1j, y.min():y.max():nbins * 1j]
+	zi = k(np.vstack([xi.flatten(), yi.flatten()]))
+
+	fig, ax = plt.subplots(1, 1)
+	ax.pcolormesh(xi, yi, zi.reshape(xi.shape), shading='gouraud', cmap='gist_heat')
+	ax.contour(xi, yi, zi.reshape(xi.shape), linewidths=0.5, cmap='cool_r')
+
+	ax.tick_params(bottom="on", top="on", right="on", which='both', direction='in', length=2)
+	fig, ax = makeSquare(fig,ax)
+	plt.xlabel(r'$' + x_label + '$')
+	plt.ylabel(r'$' + y_label + '$')
+	if x_lims is not None:
+		plt.xlim(x_lims[0], x_lims[1])
+	if y_lims is not None:
+		plt.ylim(y_lims[0], y_lims[1])
+	ax.xaxis.set_zorder(99999)
+	ax.yaxis.set_zorder(99999)
+	# Show plot and save figure
+	plt.savefig(file, transparent=True, bbox_inches='tight')
+	return
 
 def plot2D_uv(u, cmap, lvls, lim, file, **kwargs):
 	"""
