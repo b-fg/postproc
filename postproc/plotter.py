@@ -16,9 +16,9 @@ import matplotlib.animation as animation
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 plt.rc('text', usetex=True )
-plt.rc('font',family = 'sans-serif',  size=13) # use 13 for squared double columns figures
-mpl.rc('xtick', labelsize=13)
-mpl.rc('ytick', labelsize=13)
+plt.rc('font',family = 'sans-serif',  size=16) # use 13(JFM) or 16(SNH)
+mpl.rc('xtick', labelsize=16)
+mpl.rc('ytick', labelsize=16)
 mpl.rcParams['text.latex.preamble'] = [r'\usepackage{amsmath}'] #for \text command
 plt.rcParams['animation.ffmpeg_path'] = r"/usr/bin/ffmpeg"
 mpl.rcParams['axes.linewidth'] = 0.5
@@ -217,8 +217,8 @@ def animate_2Dx2(a, b, file, **kwargs):
 	field_name = kwargs.get('field_name', '')
 	n_ticks = kwargs.get('n_ticks', 20)
 	n_decimals = kwargs.get('n_decimals', 2)
-	fps = kwargs.get('fps', 8)
-	dpi = kwargs.get('dpi', 600)
+	fps = kwargs.get('fps', 10)
+	dpi = kwargs.get('dpi', 300)
 	N, M = a[0].shape[0], a[0].shape[1]
 
 	# Create uniform grid
@@ -274,8 +274,8 @@ def animate_2Dx2(a, b, file, **kwargs):
 	ax1.add_patch(cyl1)
 	ax2.add_patch(cyl2)
 	plt.subplots_adjust(hspace=0.05, bottom=0.15)
-	ax1.text(-1, 2.3, r'$0.5$')
-	ax2.text(-1, 2.3, r'$\pi$')
+	ax1.text(-1, 2.3, r'$2{\text -}\mathrm{D}$')
+	ax2.text(-1, 2.3, r'$L_z=\pi$')
 
 	# Add colorbar
 	# if lim[0] < 0:
@@ -323,16 +323,17 @@ def density2D(x, y, file='test.pdf', nbins=20, **kwargs):
 	y_label = kwargs.get('y_label', None)
 	x_lims = kwargs.get('x_lims', None)
 	y_lims = kwargs.get('y_lims', None)
+	cmap = kwargs.get('cmap', 'gist_heat')
 
 	k = kde.gaussian_kde(np.array([x.flatten(),y.flatten()]))
 	xi, yi = np.mgrid[x.min():x.max():nbins * 1j, y.min():y.max():nbins * 1j]
 	zi = k(np.vstack([xi.flatten(), yi.flatten()]))
 
 	fig, ax = plt.subplots(1, 1)
-	ax.pcolormesh(xi, yi, zi.reshape(xi.shape), shading='gouraud', cmap='gist_heat')
-	ax.contour(xi, yi, zi.reshape(xi.shape), linewidths=0.5, cmap='cool_r')
+	ax.pcolormesh(xi, yi, zi.reshape(xi.shape), shading='gouraud', cmap=cmap)
+	ax.contour(xi, yi, zi.reshape(xi.shape), linewidths=0.5, cmap=cmap+'_r')
 
-	ax.tick_params(bottom="on", top="on", right="on", which='both', direction='in', length=2)
+	ax.tick_params(bottom="on", top="on", right="on", which='both', direction='in', length=2, color='black')
 	fig, ax = makeSquare(fig,ax)
 	plt.xlabel(r'$' + x_label + '$')
 	plt.ylabel(r'$' + y_label + '$')
@@ -340,6 +341,8 @@ def density2D(x, y, file='test.pdf', nbins=20, **kwargs):
 		plt.xlim(x_lims[0], x_lims[1])
 	if y_lims is not None:
 		plt.ylim(y_lims[0], y_lims[1])
+	ax.xaxis.set_ticks=[-0.02, 0.00, 0.02]
+	ax.yaxis.set_ticks=[0.05, 0.01, 0.015]
 	ax.xaxis.set_zorder(99999)
 	ax.yaxis.set_zorder(99999)
 	# Show plot and save figure

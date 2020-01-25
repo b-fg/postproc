@@ -370,6 +370,7 @@ def read_object(fname):
 		obj = pickle.load(input)
 	return obj
 
+
 def read_txt(fname, skiprows=0, delimiter=','):
-   lines = np.loadtxt(fname, skiprows=skiprows, delimiter=delimiter, unpack=True)
-   return lines
+	lines = np.loadtxt(fname, skiprows=skiprows, delimiter=delimiter, unpack=True)
+	return lines
