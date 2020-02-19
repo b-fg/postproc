@@ -22,18 +22,18 @@
 
 ### Installation and usage
 
-The use of a virtual environment is recommended for the installation of the package. Here we will use ``conda``. Create a new conda enviroment with based on python 3.6 as follows:
+The use of a virtual environment is recommended for the installation of the package. Here we will use ``conda``. Create a new `conda` environment with based on python 3.6 as follows:
 ```
 conda create --name my_env python=3.6
 ```
-Activate the enviroment and install the package using `pip`:
+Activate the environment and install the package using `pip`:
 ```
 source activate my_env
 pip install -e ~/postproc
 ```
-The enviroment can be deactivated running `conda deactivate`. In order to be able to perform modification on the package without the need of reinstalling the `-e` (editable) argument is used. This provides the source path of the package to the conda enviroment so any modifications on the source code (the folder you have downloaded and installed from) is immediately available with no need to re-install.
+The environment can be deactivated running `conda deactivate`. In order to be able to perform modification on the package without the need of reinstalling the `-e` (editable) argument is used. This provides the source path of the package to the `conda` environment so any modifications on the source code (the folder you have downloaded and installed from) is immediately available with no need to re-install.
 
-To use the package just activate the conda environment in your terminal with `source activate my_env` or load it into your preferred IDE. In your python script, you can import the modules with:
+To use the package just activate the `conda` environment in your terminal with `source activate my_env` or load it into your preferred IDE. In your python script, you can import the modules with:
 
 	import postproc.calc as calc
 	import postproc.cylinder_forces as cf
