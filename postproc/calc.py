@@ -427,6 +427,32 @@ def separation_points2(q, alphas, eps=0.1):
 	return alpha_u, alpha_l-360
 
 
+def wake_width(a, eps=0.0005):
+	ww = np.zeros(a.shape)
+	l, u = None, None
+	for i in range(a.shape[0]):
+		for j in range(a.shape[1]):
+			if np.abs(a[i,j]) > eps:
+				print('l',a[i,j],i,j)
+				l = j
+				break
+		for j in reversed(range(a.shape[1])):
+			if np.abs(a[i,j]) > eps:
+				print('u',a[i,j],i,j)
+				u = j
+				break
+		if l is not None and u is not None:
+			ww[i,l:u+1] = 1
+		l, u = None, None
+	return ww
+
+
+def wake_width2(a, eps=0.0001):
+	ww = np.zeros(a.shape)
+	ww[np.abs(a) > eps] = 1
+	return ww
+
+
 def corr(a,b):
 	am = np.mean(a)
 	bm = np.mean(b)

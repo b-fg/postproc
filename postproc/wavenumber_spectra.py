@@ -11,7 +11,7 @@ import scipy.signal as signal
 from tqdm import tqdm
 
 # Functions
-def ke_spectra(u_i, x_i, **kwargs):
+def spectra(u_i, x_i, **kwargs):
 	"""
 	Computes the kinetic energy (KE) of a n-dimensional velocity vector field such as u_i = (u, v, w) for 3D.
 	:param u_i: n-dimensional velocity vector field
@@ -19,7 +19,7 @@ def ke_spectra(u_i, x_i, **kwargs):
 	:param kwargs: k_res for the resolution of k_mod_line which defines the bandwitdh dk.
 	:return: k_mod 1D array and ke_integral 1D array.
 	"""
-	if len(u_i) > 3 or len(u_i) < 1 or len(x_i) > 3 or len(x_i) < 1:
+	if len(u_i) > 3 or len(u_i) < 1 or len(x_i) > 3 or len(x_i) < 1 or any([u.ndim != len(x_i) for u in u_i]):
 		raise ValueError('Invalid field dimensions')
 	# Wavenumbers
 	k_i = _wavenumbers(*x_i) # k_i = (kx, ky, kz)
@@ -31,30 +31,14 @@ def ke_spectra(u_i, x_i, **kwargs):
 		ke += uk*uk.conjugate() # KE
 	ke = 0.5*ke
 	# Calc spectra
-	return _pair_integrate_fast(ke, *k_i, **kwargs)
+	workers = kwargs.get('workers', 1)
+	if workers > 1:
+		return _pair_integrate_fast(ke, *k_i, **kwargs)
+	else:
+		return _pair_integrate(ke, *k_i, **kwargs)
 
 
-def scalar_spectra(a, *args, **kwargs):
-	"""
-	Computes the wavenumber spectra of a n-dimensional scalar field by means of nFFT. The spectra is for the wavenumber
-	modulus of ak. Hence it performs and spherical integration for all the components of k_i (the wavenumber vector)
-	:param a: The scalar field
-	:param args: The spatial vector x_i = (x, y, z)
-	:param kwargs: k_res for the resolution of k_mod_line which defines the bandwitdh dk.
-	:return: k_mod 1D array and ak_integral 1D array.
-	"""
-	if a.ndim > 3 or a.ndim < 1:
-		raise ValueError('Invalid field dimensions')
-	elif a.ndim != len(args):
-		raise ValueError('Field dimensions must much the spatial vector components passed to the function')
-
-	k_i = _wavenumbers(*args) # k_i = (kx, ky, kz)
-	a = _window_ndim(a, signal.hanning) # Windowing
-	ak = np.fft.fftn(a)/a.size # FFT add power spectrum??
-	return _pair_integrate_fast(ak, *k_i, **kwargs) # Calc spectra
-
-
-def _pair_integrate_fast(ak, *args, **kwargs):
+def _pair_integrate(ak, *args, **kwargs):
 	"""
 	Internal function which computes the wavenumber modulus k_mod for each fft coefficient of the ak ndarray and
 	integrates the components contributing to the same k_mod with a certain bandwidth dk
@@ -75,7 +59,6 @@ def _pair_integrate_fast(ak, *args, **kwargs):
 	ak_integral = np.zeros(k_res)
 	k_mod_line = np.linspace(0, k_res - 1, k_res) * dk + dk / 2  # k values at half of each bandwidth
 
-	print('	Find ak(k_i) with its k modulus and integrate it in ak(k)')
 	with tqdm(total=ak.size) as pbar:
 		for index in np.ndindex(ak.shape):
 			ak_p = ak[index]
@@ -83,7 +66,6 @@ def _pair_integrate_fast(ak, *args, **kwargs):
 			for i, k in enumerate(args):
 				k2_sum += k[index[i]] ** 2
 			k_mod = np.sqrt(k2_sum)
-
 			kint = int(k_mod / dk)
 			if kint >= k_res:
 				ak_integral[-1] += np.abs(ak_p)
@@ -92,6 +74,54 @@ def _pair_integrate_fast(ak, *args, **kwargs):
 			pbar.update(1)
 
 	return k_mod_line, ak_integral
+
+
+def _pair_integrate_fast(ak, *args, **kwargs):
+	"""
+	Internal function which computes the wavenumber modulus k_mod for each fft coefficient of the ak ndarray and
+	integrates the components contributing to the same k_mod with a certain bandwidth dk
+	:param ak: The nFFT of (a)
+	:param args: the wavenumber vector *k_i
+	:param kwargs: k_res for the resolution of k_mod_line which defines the bandwitdh dk.
+	:return: k_mod 1D array and ak_integral 1D array.
+	"""
+	from concurrent.futures import ThreadPoolExecutor
+	from pathos.multiprocessing import Pool, cpu_count
+	def spherical_integration(index):
+		k2_sum = 0
+		for i, k in enumerate(args):
+			k2_sum += k[index[i]] ** 2
+		k_mod = np.sqrt(k2_sum)
+		kint = int(k_mod / dk)
+		if kint >= k_res:
+			ak_integral[-1] += np.abs(ak[index])
+		else:
+			ak_integral[kint] += np.abs(ak[index])
+
+	workers = kwargs.get('workers', 1)
+	k_res = kwargs.get('k_res', 200)
+	k2_sum_max = 0
+	k2_sum_min = 0
+	for k in args:
+		k2_sum_max += np.max(k**2)
+		k2_sum_min += np.min(k**2)
+	k_min, k_max = np.sqrt(k2_sum_min), np.sqrt(k2_sum_max)
+	dk = (k_max - k_min) / k_res
+
+	ak_integral = np.zeros(k_res)
+	k_mod_line = np.linspace(0, k_res - 1, k_res) * dk + dk / 2  # k values at half of each bandwidth
+
+	# Threading
+	# with ThreadPoolExecutor(max_workers=workers) as executor:
+	# 	_ = list(tqdm(executor.map(spherical_integration, np.ndindex(ak.shape)),
+	# 	                    total=ak.size))
+
+	# Processing
+	with Pool(processes=workers) as pool:
+		_ = list(tqdm(pool.map(spherical_integration, np.ndindex(ak.shape)), total=ak.size))
+
+	return k_mod_line, ak_integral
+
 
 def _wavenumbers(*args):
 	"""

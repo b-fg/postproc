@@ -28,10 +28,12 @@ mpl.rcParams['axes.linewidth'] = 0.5
 plt.switch_backend('PDF') #pdf
 # plt.switch_backend('PS')
 
-colors = ['black', 'orange', 'cyan', 'green', 'blue', 'red', 'magenta', 'yellow']
-# colors = ['orange', 'cyan', 'green', 'blue', 'red', 'magenta', 'yellow']
+# colors = ['black', 'orange', 'cyan', 'green', 'blue', 'red', 'magenta', 'yellow']
+colors = ['orange', 'cyan', 'green', 'blue', 'red', 'magenta', 'yellow']
 markers = ['|', 's', '^', 'v', 'x', 'o', '*']
 # markers = ['s', '^', 'v', 'x', 'o', '*']
+
+styles = ['-', 'dashed']
 
 # Functions
 # ------------------------------------------------------
@@ -65,6 +67,7 @@ def plot_2D(u, file='test.pdf', **kwargs):
 	case = kwargs.get('case', None)
 	annotate = kwargs.get('annotate', False)
 	eps = kwargs.get('eps', 0.0001)
+	cbar_flag = kwargs.get('cbar_flag', False)
 	N, M = u.shape[0], u.shape[1]
 
 	# Create uniform grid
@@ -128,7 +131,6 @@ def plot_2D(u, file='test.pdf', **kwargs):
 	ax.tick_params(bottom="on", top="on", right="on", which='both', direction='in', length=2)
 	ax.xaxis.set_zorder(99999)
 	ax.yaxis.set_zorder(99999)
-	divider = make_axes_locatable(ax)
 
 	if case == 'taylor-green':
 		ax.xaxis.set_major_locator(plt.MultipleLocator(np.pi))
@@ -137,30 +139,34 @@ def plot_2D(u, file='test.pdf', **kwargs):
 		ax.yaxis.set_major_formatter(plt.FuncFormatter(multiple_formatter()))
 		ax.xaxis.set_ticks([xlims[0], xlims[1]+xlims[0], xlims[1]])
 		ax.yaxis.set_ticks([ylims[0], ylims[1]+ylims[0], ylims[1]])
-		cax = divider.append_axes("right", size="5%", pad=0.15)
-	elif case == 'circle':
+	elif case == 'cylinder':
 		# ax.yaxis.set_ticks([-2, 0, 2])
 		grey_color = '#dedede'
 		cyl = patches.Circle((0, 0), 0.5, linewidth=0.2, edgecolor='black', facecolor=grey_color, zorder=9999)
 		ax.add_patch(cyl)
-		# cax = divider.append_axes("right", size="5%", pad=0.0, aspect=15)
-		cax = divider.append_axes("right", size="5%", pad=0.15)
 
 	# -- Add colorbar
-	if lim[0] < 0:
-		tick1 = np.linspace(lim[0], 0, n_ticks / 2)
-		dl = tick1[1] - tick1[0]
-		tick2 = np.linspace(dl, lim[1], n_ticks / 2 - 1)
-		ticks = np.append(tick1, tick2)
-	else:
-		ticks = np.linspace(lim[0], lim[1], n_ticks + 1)
-	# norm = mpl_colors.Normalize(vmin=lim[0], vmax=lim[1])
-	norm = mpl_colors.Normalize(vmin=np.min(u), vmax=np.max(u))
-	cbar = fig.colorbar(cf, cax=cax, extend='both', ticks=ticks, norm=norm)
-	fmt_str = r'${:.' + str(n_decimals) + 'f}$'
-	cbar.ax.set_yticklabels([fmt_str.format(t) for t in ticks])
-	cbar.ax.yaxis.set_tick_params(pad=5, direction='out', size=1)  # your number may vary
-	cbar.ax.set_title(title, x=1, y=1.02, loc='left', size=12)
+	if cbar_flag:
+		divider = make_axes_locatable(ax)
+		if case == 'cylinder':
+			cax = divider.append_axes("right", size="5%", pad=0.0, aspect=15)
+			# cax = divider.append_axes("right", size="5%", pad=0.15)
+		else:
+			cax = divider.append_axes("right", size="5%", pad=0.15)
+		if lim[0] < 0:
+			tick1 = np.linspace(lim[0], 0, n_ticks / 2)
+			dl = tick1[1] - tick1[0]
+			tick2 = np.linspace(dl, lim[1], n_ticks / 2 - 1)
+			ticks = np.append(tick1, tick2)
+		else:
+			ticks = np.linspace(lim[0], lim[1], n_ticks + 1)
+		norm = mpl_colors.Normalize(vmin=lim[0], vmax=lim[1])
+		norm = mpl_colors.Normalize(vmin=np.min(u), vmax=np.max(u))
+		cbar = fig.colorbar(cf, cax=cax, extend='both', ticks=ticks, norm=norm)
+		fmt_str = r'${:.' + str(n_decimals) + 'f}$'
+		cbar.ax.set_yticklabels([fmt_str.format(t) for t in ticks])
+		cbar.ax.yaxis.set_tick_params(pad=5, direction='out', size=1)  # your number may vary
+		cbar.ax.set_title(title, x=1, y=1.02, loc='left', size=12)
 
 	# Add annotation if desired
 	if annotate:
@@ -205,9 +211,7 @@ def animate_2Dx2(a, b, file, **kwargs):
 		ax1.set_title(title, size=12, y=1.03)
 		return [c1, c2, cf1, cf2]
 
-	k = len(a)  # Number of snapshots
-	print(k)
-	time = kwargs.get('time', np.arange(k))
+	time = kwargs.get('time', np.arange(len(a)))
 	levels = kwargs.get('levels', 50)
 	lim = kwargs.get('lim', [np.min(a[0]), np.max(a[0])])
 	cmap = kwargs.get('cmap', 'Blues')
@@ -215,6 +219,7 @@ def animate_2Dx2(a, b, file, **kwargs):
 	xshift = kwargs.get('xshift', 0)
 	yshift = kwargs.get('yshift', 0)
 	field_name = kwargs.get('field_name', '')
+	names = kwargs.get('names', ['',''])
 	n_ticks = kwargs.get('n_ticks', 20)
 	n_decimals = kwargs.get('n_decimals', 2)
 	fps = kwargs.get('fps', 10)
@@ -274,8 +279,161 @@ def animate_2Dx2(a, b, file, **kwargs):
 	ax1.add_patch(cyl1)
 	ax2.add_patch(cyl2)
 	plt.subplots_adjust(hspace=0.05, bottom=0.15)
-	ax1.text(-1, 2.3, r'$2{\text -}\mathrm{D}$')
-	ax2.text(-1, 2.3, r'$L_z=\pi$')
+	ax1.text(-1, 2.3, names[0])
+	ax2.text(-1, 2.3, names[1])
+
+	# Add colorbar
+	# if lim[0] < 0:
+	#	 tick1 = np.linspace(lim[0], 0, n_ticks / 2)
+	#	 dl = tick1[1] - tick1[0]
+	#	 tick2 = np.linspace(dl, lim[1], n_ticks / 2 - 1)
+	#	 ticks = np.append(tick1, tick2)
+	# else:
+	#	 ticks = np.linspace(lim[0], lim[1], n_ticks + 1)
+	# cbar_ax = plt.colorbar(cf2, ax=[ax1, ax2], extend='both', norm=norm).ax
+	# cbar_ax.set_title(field_name, y=1.02, loc='left', size=12)
+	# fmt_str = r'${:.' + str(n_decimals) + 'f}$'
+	# cbar_ax.set_yticklabels([fmt_str.format(t) for t in ticks])
+	# cbar_ax.yaxis.set_tick_params(pad=5, direction='out', size=1)  # your number may vary
+	# cbar_ax.set_title(field_name, x=1, y=1.02, loc='left', size=12)
+
+	# Animate
+	writer = animation.FFMpegWriter(fps=fps, extra_args=['-vcodec', 'libx264'])
+	anim = animation.FuncAnimation(fig, anim, frames=len(a))
+	anim.save(file, writer=writer, dpi=dpi)
+	return
+
+def animate_2Dx4(a, b, c, d, file, **kwargs):
+	import matplotlib.gridspec as gridspec
+	plt.rc('font', size=9)
+	mpl.rc('xtick', labelsize=9)
+	mpl.rc('ytick', labelsize=9)
+	global c1, c2, c3, c4, cf1, cf2, cf3, cf4, cf
+
+	def anim(i):
+		global c1, c2, c3, c4, cf1, cf2, cf3, cf4, cf
+		for cc in cf1.collections:
+			cc.remove()  # removes only the contours, leaves the rest intact
+		for cc in cf2.collections:
+			cc.remove()  # removes only the contours, leaves the rest intact
+		for cc in cf3.collections:
+			cc.remove()  # removes only the contours, leaves the rest intact
+		for cc in cf4.collections:
+			cc.remove()  # removes only the contours, leaves the rest intact
+		for cc in c1.collections:
+			cc.remove()  # removes only the contours, leaves the rest intact
+		for cc in c2.collections:
+			cc.remove()  # removes only the contours, leaves the rest intact
+		for cc in c3.collections:
+			cc.remove()  # removes only the contours, leaves the rest intact
+		for cc in c4.collections:
+			cc.remove()  # removes only the contours, leaves the rest intact
+		print('{:4d}'.format(i))
+
+		c1 = ax1.contour(x.T, y.T, a[i].T, clvls, linewidths=0.05, colors='k')
+		c2 = ax2.contour(x.T, y.T, b[i].T, clvls, linewidths=0.05, colors='k')
+		c3 = ax3.contour(x.T, y.T, c[i].T, clvls, linewidths=0.05, colors='k')
+		c4 = ax4.contour(x.T, y.T, d[i].T, clvls, linewidths=0.05, colors='k')
+		cf1 = ax1.contourf(x.T, y.T, a[i].T, levels, vmin=lim[0], vmax=lim[1], norm=norm, cmap=cmap, extend='both')
+		cf2 = ax2.contourf(x.T, y.T, b[i].T, levels, vmin=lim[0], vmax=lim[1], norm=norm, cmap=cmap, extend='both')
+		cf3 = ax3.contourf(x.T, y.T, c[i].T, levels, vmin=lim[0], vmax=lim[1], norm=norm, cmap=cmap, extend='both')
+		cf4 = ax4.contourf(x.T, y.T, d[i].T, levels, vmin=lim[0], vmax=lim[1], norm=norm, cmap=cmap, extend='both')
+
+		title = r'$t = ' + '{:.2f}'.format(time[i]) + '$'
+		plt.suptitle(title, size=10, y=0.84)
+		return [c1, c2, c3, c4, cf1, cf2, cf3, cf4]
+
+	time = kwargs.get('time', np.arange(len(a)))
+	levels = kwargs.get('levels', 50)
+	lim = kwargs.get('lim', [np.min(a[0]), np.max(a[0])])
+	cmap = kwargs.get('cmap', 'Blues')
+	scaling = kwargs.get('scaling', 1)
+	xshift = kwargs.get('xshift', 0)
+	yshift = kwargs.get('yshift', 0)
+	field_name = kwargs.get('field_name', '')
+	names = kwargs.get('names', ['',''])
+	n_ticks = kwargs.get('n_ticks', 20)
+	n_decimals = kwargs.get('n_decimals', 2)
+	fps = kwargs.get('fps', 10)
+	dpi = kwargs.get('dpi', 300)
+	N, M = a[0].shape[0], a[0].shape[1]
+
+	# Create uniform grid
+	if 'grid' in kwargs:
+		grid = kwargs['grid']
+		x, y = grid[0] / scaling, grid[1] / scaling
+	elif 'x' in kwargs and 'y' in kwargs:
+		x = np.transpose(kwargs.get('x')) / scaling + xshift
+		y = np.transpose(kwargs.get('y')) / scaling + yshift
+		x, y = np.meshgrid(x, y)
+	else:
+		xmin, xmax = 0, N - 1
+		ymin, ymax = -M / 2, M / 2 - 1
+		x, y = np.linspace(xmin / scaling, xmax / scaling, N), np.linspace(ymin / scaling, ymax / scaling, M)
+		x, y = x + xshift, y + yshift
+		x, y = np.meshgrid(x, y)
+
+	# fig, ax = plt.subplots(2, 2, constrained_layout=True)
+	fig, ax = plt.subplots(2, 2)
+	ax1, ax2, ax3, ax4 = ax[0,0], ax[1,0], ax[0,1], ax[1,1]
+	fig.tight_layout()
+	fig.subplots_adjust(wspace=0.0, hspace=-0.6)
+
+	if lim[0] < 0:
+		clvls = levels
+	else:
+		extra_levels = 5
+		dl = levels[1] - levels[0]
+		clvls = np.append(levels, np.linspace(lim[1] + dl, lim[1] + extra_levels * dl, extra_levels))
+	norm = mpl_colors.Normalize(vmin=lim[0], vmax=lim[1])
+
+	c1 = ax1.contour(x.T, y.T, a[0].T, clvls, linewidths=0.05, colors='k')
+	c2 = ax2.contour(x.T, y.T, b[0].T, clvls, linewidths=0.05, colors='k')
+	c3 = ax3.contour(x.T, y.T, c[0].T, clvls, linewidths=0.05, colors='k')
+	c4 = ax4.contour(x.T, y.T, d[0].T, clvls, linewidths=0.05, colors='k')
+	cf1 = ax1.contourf(x.T, y.T, a[0].T, levels, vmin=lim[0], vmax=lim[1], norm=norm, cmap=cmap, extend='both')
+	cf2 = ax2.contourf(x.T, y.T, b[0].T, levels, vmin=lim[0], vmax=lim[1], norm=norm, cmap=cmap, extend='both')
+	cf3 = ax3.contourf(x.T, y.T, c[0].T, levels, vmin=lim[0], vmax=lim[1], norm=norm, cmap=cmap, extend='both')
+	cf4 = ax4.contourf(x.T, y.T, d[0].T, levels, vmin=lim[0], vmax=lim[1], norm=norm, cmap=cmap, extend='both')
+
+	cf = [c1, c2, c3, c4, cf1, cf2, cf3, cf4]
+
+	# Format figure
+	ax1.tick_params(bottom="on", top="on", right="on", which='both', direction='in', labelbottom='off', length=2)
+	ax3.tick_params(bottom="on", top="on", right="on", which='both', direction='in', labelbottom='off', labelleft='off', length=2)
+	ax1.set_xticklabels([])
+	ax3.set_xticklabels([])
+	ax3.set_yticklabels([])
+	ax2.tick_params(bottom="on", top="on", right="on", which='both', direction='in', length=2)
+	ax4.tick_params(bottom="on", top="on", right="on", which='both', direction='in', labelleft='off', length=2)
+	ax4.set_yticklabels([])
+	ax1.set_aspect(1)
+	ax2.set_aspect(1)
+	ax3.set_aspect(1)
+	ax4.set_aspect(1)
+	plt.xlim(np.min(x), np.max(x))
+	plt.ylim(np.min(y), np.max(y))
+	ax1.yaxis.set_ticks([-2, 0, 2])
+	ax2.yaxis.set_ticks([-2, 0, 2])
+	ax2.xaxis.set_ticks([0,2,4,6,8,10])
+	ax4.xaxis.set_ticks([0,2,4,6,8,10])
+
+	# Set title, circles and text
+	title = r'$t = ' + '{:.2f}'.format(time[0]) + '$'
+	plt.suptitle(title, size=10, y=0.84)
+	grey_color = '#dedede'
+	cyl1 = patches.Circle((0, 0), 0.5, linewidth=0.2, edgecolor='black', facecolor=grey_color, zorder=9999)
+	cyl2 = patches.Circle((0, 0), 0.5, linewidth=0.2, edgecolor='black', facecolor=grey_color, zorder=9999)
+	cyl3 = patches.Circle((0, 0), 0.5, linewidth=0.2, edgecolor='black', facecolor=grey_color, zorder=9999)
+	cyl4 = patches.Circle((0, 0), 0.5, linewidth=0.2, edgecolor='black', facecolor=grey_color, zorder=9999)
+	ax1.add_patch(cyl1)
+	ax2.add_patch(cyl2)
+	ax3.add_patch(cyl3)
+	ax4.add_patch(cyl4)
+	ax1.text(-1, 2.3, names[0])
+	ax2.text(-1, 2.3, names[1])
+	ax3.text(-1, 2.3, names[2])
+	ax4.text(-1, 2.3, names[3])
 
 	# Add colorbar
 	# if lim[0] < 0:
@@ -1025,6 +1183,25 @@ def CL_CD_theta_2(fy, fx, t, alphas, times, fname):
 	return
 
 
+def plot_forces_list(T, CD, CL, names, file='test.pdf'):
+	fig, ax = plt.subplots(1, 1)
+	colors = ['k', 'r', 'b', 'purple', 'orange', 'g', 'grey', 'c']
+	for i in range(len(T)):
+		CL_label = '$C_L, \mathrm{' + names[i] + '}$'
+		ax.plot(T[i], CL[i], color=colors[i], alpha=0.8, ls='-', lw=1, label=CL_label)
+		CD_label = '$C_D, \mathrm{' + names[i] + '}$'
+		ax.plot(T[i], CD[i], color=colors[i], alpha=0.8, ls='dashed', lw=1, label=CD_label)
+
+	ax.set_xlim(min(T[0]), max(T[0]))
+	ax.set_xlabel('$T$')
+	ax.tick_params(bottom=True, top=True, right=True, which='both', direction='in', length=2)
+	leg = plt.legend(bbox_to_anchor=(1.04, 1), loc="upper left", borderaxespad=0)
+	leg.get_frame().set_edgecolor('grey')
+	plt.savefig(file, transparent=True, bbox_inches='tight')
+	plt.clf()
+	return
+
+
 def plotCL(fy, t, file, **kwargs):
 	"""
 	Plot the lift force as a time series.
@@ -1368,6 +1545,50 @@ def plotXY(y, **kwargs):
 	return
 
 
+def plotXY_list(Y, file='test.pdf', **kwargs):
+	"""
+	Generate a x-y plot in space
+	:param y: series to plot [1D numpy array]
+	:param label: y axis label [string]
+	:param file: output file name
+	:param kwargs: 'x' coordinates [numpy 1D array], 'xD_min' left x limit, 'ylog' log plot [boolean]
+	:return: -
+	"""
+	fig, ax = plt.subplots(1, 1)
+
+	N = Y[0].shape[0]
+	X = kwargs.get('X', [np.arange(N) for i in range(len(Y))])
+	xlabel = kwargs.get('xlabel', 'x')
+	ylabel = kwargs.get('ylabel', 'y')
+	ylog = kwargs.get('ylog', False)
+	xlog = kwargs.get('xlog', False)
+	names = kwargs.get('names', [None for i in range(len(Y))])
+	names = [r'$\mathrm{'+name+'}$' for name in names]
+
+	# Show lines
+	for i,(x,y) in enumerate(zip(X,Y)):
+		plt.plot(x, y, color=colors[i], lw=1, label=names[i])
+
+	# Edit figure, axis, limits
+	ax.set_xlim(np.min(X), np.max(X))
+	if xlog:
+		ax.set_xscale('log')
+	if ylog:
+		ax.set_yscale('log')
+
+	plt.xlabel(r'$'+xlabel+'$')
+	plt.ylabel(r'$'+ylabel+'$')
+
+	leg = plt.legend(loc='upper left', prop={'size': 10})
+	leg.get_frame().set_edgecolor('black')
+	leg.get_frame().set_facecolor('white')
+	leg.get_frame().set_linewidth(0.5)
+
+	# Show plot and save figure
+	fig, ax = makeSquare(fig,ax)
+	plt.savefig(file, transparent=True, bbox_inches='tight')
+	return
+
 def plotXYSpatial(y, label, file, **kwargs):
 	"""
 	Generate a x-y plot in space
@@ -1414,7 +1635,6 @@ def plotXYSpatial(y, label, file, **kwargs):
 	plt.show()
 	plt.savefig(file, transparent=True, bbox_inches='tight')
 	return
-
 
 def plotScatter(x, y, cases, file):
 	"""
@@ -1688,26 +1908,25 @@ def plotCp_list(file, y_tuple_list, x_list, **kwargs):
 	return
 
 # ------------------------------------------------------ LogLog Spatial
-def plotLogLogSpatialSpectra(file, wn, uk):
+def plotLogLogSpatialSpectra(file, k, ak):
 	"""
 	Generate a loglog plot of a 1D spatial signal
 	:param file: output file name
-	:param wn: frequency [1D numpy array]
-	:param uk: transformed u: uk = FFT(u). [1D numpy array]
+	:param k: frequency [1D numpy array]
+	:param uk: signal in wavenumber space [1D numpy array]
 	:return: -
 	"""
-	ax = plt.gca()
-	fig  = plt.gcf()
+	fig, ax = plt.subplots(1, 1)
 
 	# Show lines
-	plt.loglog(wn, uk, color='black', lw=1.5, label='$L_z = piD$')
-	x, y = loglogLine(p2=(max(wn), 5e-4), p1x=min(wn)*10, m=-5/3)
+	plt.loglog(k, ak, color='black', lw=1.5, label='$L_z = piD$')
+	x, y = loglogLine(p2=(max(k), 5e-4), p1x=min(k)*10, m=-5/3)
 	plt.loglog(x, y, color='black', lw=1, ls='dotted')
-	x, y = loglogLine(p2=(max(wn), 4e-4), p1x=min(wn)*10, m=-3)
+	x, y = loglogLine(p2=(max(k), 4e-4), p1x=min(k)*10, m=-3)
 	plt.loglog(x, y, color='black', lw=1, ls='dashdot')
 
 	# Set limits
-	# ax.set_xlim(min(wn)*10, max(wn))
+	# ax.set_xlim(min(k)*10, max(k))
 	# ax.set_ylim(1e-5, 1e-1)
 
 	fig, ax = makeSquare(fig,ax)
@@ -1728,7 +1947,7 @@ def plotLogLogSpatialSpectra(file, wn, uk):
 	return
 
 
-def plotLogLogSpatialSpectra_list(file, uk_tuple_list, wn_list):
+def plotLogLogSpatialSpectra_list(k_list, ak_list, file='test.pdf', **kwargs):
 	"""
 	Generate a loglog plot of a list of 1D spatial signals
 	:param file: output file name
@@ -1737,34 +1956,25 @@ def plotLogLogSpatialSpectra_list(file, uk_tuple_list, wn_list):
 	:param wn_list: list of frequencies for the different cases
 	:return: -
 	"""
-	ax = plt.gca()
-	fig  = plt.gcf()
+	fig, ax = plt.subplots(1, 1)
+	names = kwargs.get('names', ['case '+str(i) for i in range(len(k_list))])
+	xlabel = kwargs.get('xlabel', 'kD/(2\pi)')
+	ylabel = kwargs.get('ylabel', None)
 
 	# Show lines
-	for i, uk_tuple in enumerate(uk_tuple_list):
-		label = uk_tuple[0]
-		if 'piD' in label: label = '\pi D'
-		uk = uk_tuple[1]
-		label = '$'+label+'$'
-		color = colors[i]
-		plt.loglog(wn_list[i], uk, color=color, lw=0.5, label=label)
+	for i, (k, ak) in enumerate(zip(k_list, ak_list)):
+		plt.loglog(k, ak, color=colors[i], lw=1, label='$\mathrm{'+names[i]+'}$')
 
-	# x, y = loglogLine(p2=(3,1e-4), p1x=1e-2, m=-5/3)
-	# plt.loglog(x, y, color='black', lw=1, ls='dotted')
-	# x, y = loglogLine(p2=(4, 2e-5), p1x=1e-2, m=-3)
-	# plt.loglog(x, y, color='black', lw=1, ls='dashdot')
-	# x, y = loglogLine(p2=(4, 2e-5), p1x=1e-2, m=-11/3)
-	# plt.loglog(x, y, color='black', lw=1, ls='dashed')
-
-	x, y = loglogLine(p2=(3,1e-7), p1x=1e-2, m=-5/3)
-	plt.loglog(x, y, color='black', lw=1, ls='dotted')
-	x, y = loglogLine(p2=(4, 1e-9), p1x=1e-2, m=-3)
-	plt.loglog(x, y, color='black', lw=1, ls='dashdot')
-	x, y = loglogLine(p2=(4, 1e-9), p1x=1e-2, m=-11/3)
-	plt.loglog(x, y, color='black', lw=1, ls='dashed')
+	for i in np.arange(1):
+		x, y = loglogLine(p2=(np.max(k_list[0]), 1e-7*40**i), p1x=np.min(k_list[0]), m=-5/3)
+		plt.loglog(x, y, color='darkgrey', lw=0.5, ls='dotted')
+		x, y = loglogLine(p2=(1.2e2, 1e-10*40**i), p1x=1e-3, m=-3)
+		plt.loglog(x, y, color='darkgrey', lw=0.5, ls='dashdot')
+		x, y = loglogLine(p2=(np.max(k_list[0]), 1e-11*40**i), p1x=np.min(k_list[0]), m=-3.66)
+		plt.loglog(x, y, color='darkgrey', lw=0.5, ls='dashed')
 
 	# Set limits
-	# ax.set_xlim(1e-3, 1.5)
+	ax.set_xlim(np.min(k_list[1]), np.max(k_list[1]))
 	ax.set_ylim(1e-13, 10)
 
 	fig, ax = makeSquare(fig,ax)
@@ -1772,20 +1982,25 @@ def plotLogLogSpatialSpectra_list(file, uk_tuple_list, wn_list):
 	ax.tick_params(bottom="on", top="on", which='both')
 
 	# Edit frame, labels and legend
-	plt.xlabel('$kD$')
-	plt.ylabel('$tke$')
-	leg = plt.legend(loc='upper right')
-	leg.get_frame().set_edgecolor('white')
+	ax.tick_params(bottom="on", top="on", which='both', direction='in')
+	plt.xlabel(r'$'+xlabel+'$')
+	plt.ylabel(r'$'+ylabel+'$')
+	leg = plt.legend(loc='lower left')
+	leg.get_frame().set_edgecolor('black')
+	leg.get_frame().set_facecolor('white')
+	leg.get_frame().set_linewidth(0.5)
+	leg.get_frame().set_alpha(0.85)
+	# ax.yaxis.set_ticks([-2, 0, 2])
+	ax.tick_params(bottom="on", top="on", right="on", which='both', direction='in', length=2)
+	# ax.get_yaxis().set_ticks([], minor=True)
 
-	# Anotations
-	# plt.text(x=1e-2, y=1e1, s='$-5/3$', color='black')
-	# plt.text(x=1e-2, y=3e5, s='$-3$', color='black')
-	# plt.text(x=2e-2, y=4e2, s='$-11/3$', color='black')
+	# ax.set_xticks([1.1, 1.2, 1.3, 1.4, 1.5, 1.6 ,1.7, 1.8, 1.9 ,2], minor=True)
+	# ax.set_yticks([0.3, 0.55, 0.7], minor=True)
+	# ax.xaxis.grid(True, which='major')
 
 	# Show plot and save figure
-	plt.show()
 	plt.savefig(file, transparent=True, bbox_inches='tight')
-	return
+	plt.clf()
 
 
 # ------------------------------------------------------ LogLog Time
@@ -1956,54 +2171,66 @@ def plotLogLogTimeSpectra_list_cascade(file, uk_tuple_list, freqs_list):
 	return
 
 
-def plotLogLogSpatialSpectra_list_cascade(file, uk_tuple_list, freqs_list):
+def plotLogLogSpatialSpectra_list_cascade(k_list, ak_list, file='test.pdf', **kwargs):
 	"""
-	Same as 'plotLogLogSpatialSpectra_list' but the spectras are separated a factor of 10 among them for visualization purposes
+	Generate a loglog plot of a list of 1D spatial signals
+	:param file: output file name
+	:param tke_tuple_list: list of tuples as (case, uk), where 'case' is the case name [string] and 'uk' is
+		the transformed u: uk = FFT(u). [1D numpy array]
+	:param wn_list: list of frequencies for the different cases
+	:return: -
 	"""
-	ax = plt.gca()
-	fig  = plt.gcf()
+	from matplotlib.lines import Line2D
 
-	for i, uk_tup in enumerate(uk_tuple_list):
-		uk = uk_tup[1] * 10 ** (-i)
-		uk_tuple_list[i] = (uk_tuple_list[i][0], uk)
+	fig, ax = plt.subplots(1, 1)
+	names = kwargs.get('names', ['case '+str(i) for i in range(len(k_list))])
+	xlabel = kwargs.get('xlabel', 'kD/(2\pi)')
+	ylabel = kwargs.get('ylabel', None)
+	groups_size = kwargs.get('groups_size', 1)
 
 	# Show lines
-	for i, uk_tuple in enumerate(uk_tuple_list):
-		label = uk_tuple[0]
-		print(label)
-		if 'pi' in label: label = '\pi'
-		if '2D' in label: label = '2\mathrm{D}'
-		uk = uk_tuple[1]
-		label = '$'+label+'$'
-		color = colors[i]
-		plt.loglog(freqs_list[i], uk, color=color, lw=0.8, label=label)
+	for i, (k, ak) in enumerate(zip(k_list, ak_list)):
+		f = 50 ** (-int(i/groups_size))
+		plt.loglog(k, ak*f, color=colors[int(i/groups_size)], lw=1,
+		           ls=styles[np.mod(i,groups_size)], label='$\mathrm{'+names[i]+'}$')
 
-
-	for i in np.arange(5):
-		x, y = loglogLine(p2=(1e3, 1e-10*10**i), p1x=1e-2, m=-5/3)
-		plt.loglog(x, y, color='black', lw=0.5, ls='dotted', alpha=0.3)
-		x, y = loglogLine(p2=(1e3, 1e-13*10**i), p1x=1e-2, m=-3)
-		plt.loglog(x, y, color='black', lw=0.5, ls='dashdot', alpha=0.3)
+	for i in np.arange(3):
+		x, y = loglogLine(p2=(np.max(k_list[0]), 1e-11*80**i), p1x=np.min(k_list[0]), m=-5/3)
+		plt.loglog(x, y, color='darkgrey', lw=0.5, ls='dotted')
+		x, y = loglogLine(p2=(1.2e2, 1e-15*80**i), p1x=1e-3, m=-3)
+		plt.loglog(x, y, color='darkgrey', lw=0.5, ls='dashdot')
+		x, y = loglogLine(p2=(np.max(k_list[0]), 1e-15*80**i), p1x=np.min(k_list[0]), m=-3.66)
+		plt.loglog(x, y, color='darkgrey', lw=0.5, ls='dashed')
 
 	# Set limits
-	# ax.set_xlim(2e0, 3e2) # Window
-	ax.set_xlim(2e0, 5e2) # Window
-	ax.set_ylim(1e-15, 1e-1)
-	# ax.set_ylim(1e-11, 1e4)
+	ax.set_xlim(np.min(k_list[0]), np.max(k_list[0]))
+	ax.set_ylim(1e-16, 0.1)
 
 	fig, ax = makeSquare(fig,ax)
+	# ax.xaxis.set_tick_params(labeltop='on')
+	ax.tick_params(bottom="on", top="on", which='both')
 
 	# Edit frame, labels and legend
 	ax.tick_params(bottom="on", top="on", which='both', direction='in')
-	plt.xlabel(r'$\kappa D$')
-	leg = plt.legend(loc='lower left')
-	leg.get_frame().set_edgecolor('white')
-	ax.get_yaxis().set_ticks([])
+	plt.xlabel(r'$'+xlabel+'$')
+	plt.ylabel(r'$'+ylabel+'$')
+
+	lines = [Line2D([0], [0], color=c, linewidth=1) for c in colors[:int(len(ak_list)/groups_size)]]
+	lines.append(Line2D([0], [0], color='black', linewidth=1))
+	lines.append(Line2D([0], [0], color='black', linewidth=1, ls='dashed'))
+	labels = ['$T/4$', '$T/2$', '$T$', '$2T$',
+	          '$\mathrm{'+names[0]+'}$',
+	          '$\mathrm{'+names[1]+'}$',]
+	leg = plt.legend(lines, labels, loc='lower left', prop={'size': 10})
+
+	leg.get_frame().set_edgecolor('black')
+	leg.get_frame().set_facecolor('white')
+	leg.get_frame().set_linewidth(0.5)
+	ax.tick_params(bottom="on", top="on", right="on", which='both', direction='in', length=2)
 
 	# Show plot and save figure
-	plt.show()
 	plt.savefig(file, transparent=True, bbox_inches='tight')
-	return
+	plt.clf()
 
 
 # ------------------------------------------------------ Lumley's Triangle

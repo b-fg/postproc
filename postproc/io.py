@@ -346,10 +346,10 @@ def read_vtr(fname):
 	return np.transpose(vec, (0,3,2,1)), np.transpose(sca, (0,3,2,1)), np.array([x, y, z])
 
 
-def pvd_parser(fname, n=None): # 'n' is the number of snapshots set by user to crop the total
+def pvd_parser(file, n=None): # 'n' is the number of snapshots set by user to crop the total
 	times = []
 	files = []
-	with open(fname) as f:
+	with open(file) as f:
 		lines = f.readlines()
 
 	for line in lines[2:-2][:n]:
@@ -359,18 +359,18 @@ def pvd_parser(fname, n=None): # 'n' is the number of snapshots set by user to c
 	return times, files
 
 
-def write_object(obj, fname):
-	with open(fname, 'wb') as output:  # Overwrites any existing file.
+def write_object(obj, file):
+	with open(file, 'wb') as output:  # Overwrites any existing file.
 		pickle.dump(obj, output, protocol=pickle.HIGHEST_PROTOCOL)
 	return
 
 
-def read_object(fname):
-	with open(fname, 'rb') as input:  # Overwrites any existing file.
+def read_object(file):
+	with open(file, 'rb') as input:  # Overwrites any existing file.
 		obj = pickle.load(input)
 	return obj
 
 
-def read_txt(fname, skiprows=0, delimiter=','):
-	lines = np.loadtxt(fname, skiprows=skiprows, delimiter=delimiter, unpack=True)
+def read_txt(file, skiprows=0, delimiter=','):
+	lines = np.loadtxt(file, skiprows=skiprows, delimiter=delimiter, unpack=True)
 	return lines
