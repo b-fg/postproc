@@ -288,7 +288,7 @@ def div(*args):
 	return res
 
 
-def _J(u, v, w):
+def _J3(u, v, w):
 	"""
 	Calculate the velocity gradient tensor
 	:param u: Horizontal velocity component
@@ -301,23 +301,66 @@ def _J(u, v, w):
 	a31, a32, a33 = ddx(w), ddy(w), ddz(w)
 	return np.array([[a11, a12, a13], [a21, a22, a23], [a31, a32, a33]])
 
+def _J2(u, v):
+	"""
+	Calculate the velocity gradient tensor
+	:param u: Horizontal velocity component
+	:param v: Vertical velocity component
+	:param w: Spanwise velocity component
+	:return: np.array (tensor) of the velocity gradient
+	"""
+	a11, a12 = ddx(u), ddy(u)
+	a21, a22 = ddx(v), ddy(v)
+	return np.array([[a11, a12], [a21, a22]])
 
-def S(u, v, w):
-	J = _J(u, v, w)
+def _J(u_i):
+	from itertools import product
+	"""
+	Calculate the velocity gradient tensor of a velocity vector field u_i
+	:return: np.array (tensor) of the velocity gradient
+	"""
+	ndims = len(u_i)
+	sh = u_i[0].shape
+	indxs = [i for i in range(ndims)]
+	dd = [ddx, ddy, ddz]
+	Jij = np.empty((ndims, ndims) + sh)
+
+	for i,j in product(indxs, indxs):
+		Jij[i,j] = dd[j](u_i[i])
+	return Jij
+
+def _S(u_i):
+	J = _J(u_i)
+	Jt = np.einsum('ij...->ji...', J)
+	return 0.5*(J + Jt)
+
+
+def Tmag(T):
+	"""
+	:param T: n-order tensor
+	:return: Magnitude of T tensor
+	"""
+	# return np.linalg.norm(T, ord='fro', axis=(0,1))*np.sqrt(2)
+	return np.sqrt(2*np.einsum('ijkl,ijkl->kl',T,T))
+
+
+def S3(u, v, w):
+	J = _J3(u, v, w)
 	return 0.5*(J + np.transpose(J, (1,0,2,3,4)))
+        
 
-
-def R(u, v, w):
-	J = _J(u, v, w)
+def R3(u, v, w):
+	J = _J3(u, v, w)
 	return 0.5*(J - np.transpose(J, (1,0,2,3,4)))
 
 
-def Q(u, v, w):
-	J = _J(u, v, w)
+def Q3(u, v, w):
+	J = _J3(u, v, w)
 	S = 0.5*(J + np.transpose(J, (1,0,2,3,4)))
 	R = 0.5*(J - np.transpose(J, (1,0,2,3,4)))
-	S_mag = np.linalg.norm(S, ord='fro', axis=(0,1))
-	S_mag2 = np.sqrt(np.trace(np.dot(S, S.T)))
+	S_mag = np.linalg.norm(S, ord='fro', axis=(0,1)) # Falta sqrt(2)
+	S_mag2 = np.sqrt(np.trace(np.dot(S, S.T))) # Falta sqrt(2)
+	S_mag3 = np.sqrt(np.tensordot(S,S,axes=2)) # Falta sqrt(2)
 	print(np.sum(S_mag))
 	print(np.sum(S_mag2))
 	R_mag = np.linalg.norm(R, ord='fro', axis=(0,1))
@@ -427,18 +470,18 @@ def separation_points2(q, alphas, eps=0.1):
 	return alpha_u, alpha_l-360
 
 
-def wake_width(a, eps=0.0005):
+def wake_width(a, eps=0.001):
 	ww = np.zeros(a.shape)
 	l, u = None, None
 	for i in range(a.shape[0]):
 		for j in range(a.shape[1]):
 			if np.abs(a[i,j]) > eps:
-				print('l',a[i,j],i,j)
+				# print('l',a[i,j],i,j)
 				l = j
 				break
 		for j in reversed(range(a.shape[1])):
 			if np.abs(a[i,j]) > eps:
-				print('u',a[i,j],i,j)
+				# print('u',a[i,j],i,j)
 				u = j
 				break
 		if l is not None and u is not None:

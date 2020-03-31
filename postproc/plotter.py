@@ -53,9 +53,11 @@ def plot_2D(u, file='test.pdf', **kwargs):
 	"""
 	from matplotlib.ticker import FormatStrFormatter, MultipleLocator, FuncFormatter
 	contour = kwargs.get('contour', False)
+	contour_color = kwargs.get('contour_color', 'black')
 	contourf = kwargs.get('contourf', True)
 	levels = kwargs.get('levels', 50)
 	lim = kwargs.get('lim', [np.min(u), np.max(u)])
+	lim_max = kwargs.get('lim_max', lim)
 	cmap = kwargs.get('cmap', 'Blues')
 	scaling = kwargs.get('scaling', 1)
 	shift = kwargs.get('shift', (0,0))
@@ -68,6 +70,13 @@ def plot_2D(u, file='test.pdf', **kwargs):
 	annotate = kwargs.get('annotate', False)
 	eps = kwargs.get('eps', 0.0001)
 	cbar_flag = kwargs.get('cbar_flag', False)
+	font_size = kwargs.get('font_size', 16)
+	dpi = kwargs.get('dpi', 100)
+	pad_inches = kwargs.get('pad_inches', 0)
+
+	plt.rc('font', size=font_size)  # use 13(JFM) or 16(SNH)
+	mpl.rc('xtick', labelsize=font_size)
+	mpl.rc('ytick', labelsize=font_size)
 	N, M = u.shape[0], u.shape[1]
 
 	# Create uniform grid
@@ -120,15 +129,16 @@ def plot_2D(u, file='test.pdf', **kwargs):
 		u = u[y_args, :]
 
 	if contour:
-		ax.contour(x, y, u, clvls, linewidths=0.1, colors='k')
+		ax.contour(x, y, u, clvls, linewidths=0.1, colors=contour_color)
 	if contourf:
-		cf = ax.contourf(x, y, u, lvls, vmin=lim[0], vmax=lim[1], cmap=cmap, extend='both')
+		cf = ax.contourf(x, y, u, lvls, vmin=lim_max[0], vmax=lim_max[1], cmap=cmap, extend='both')
 
 	# Format figure
 	ax.set_aspect(1)
 	plt.xlim(np.min(x), np.max(x))
 	plt.ylim(np.min(y), np.max(y))
 	ax.tick_params(bottom="on", top="on", right="on", which='both', direction='in', length=2)
+	# ax.tick_params(axis='x', labelcolor='white')
 	ax.xaxis.set_zorder(99999)
 	ax.yaxis.set_zorder(99999)
 
@@ -139,6 +149,7 @@ def plot_2D(u, file='test.pdf', **kwargs):
 		ax.yaxis.set_major_formatter(plt.FuncFormatter(multiple_formatter()))
 		ax.xaxis.set_ticks([xlims[0], xlims[1]+xlims[0], xlims[1]])
 		ax.yaxis.set_ticks([ylims[0], ylims[1]+ylims[0], ylims[1]])
+
 	elif case == 'cylinder':
 		# ax.yaxis.set_ticks([-2, 0, 2])
 		grey_color = '#dedede'
@@ -179,15 +190,17 @@ def plot_2D(u, file='test.pdf', **kwargs):
 						bbox=dict(boxstyle="round, pad=1", fc="w"))
 
 	# Show, save and close figure
-	plt.savefig(file, transparent=True, bbox_inches='tight')
+
+	plt.savefig(file, transparent=True, bbox_inches='tight', pad_inches=pad_inches, dpi=dpi)
 	# plt.draw()
 	# plt.clf()
 	return
 
 def animate_2Dx2(a, b, file, **kwargs):
-	plt.rc('font', size=9)
+	plt.rc('font', size=10)
 	mpl.rc('xtick', labelsize=9)
 	mpl.rc('ytick', labelsize=9)
+	mpl.rcParams['axes.linewidth'] = 0.1
 
 	global c1, c2, cf1, cf2, cf
 
@@ -208,7 +221,7 @@ def animate_2Dx2(a, b, file, **kwargs):
 		cf2 = ax2.contourf(x.T, y.T, b[i].T, levels, vmin=lim[0], vmax=lim[1], norm=norm, cmap=cmap, extend='both')
 
 		title = r'$t = ' + '{:.2f}'.format(time[i]) + '$'
-		ax1.set_title(title, size=12, y=1.03)
+		# ax1.set_title(title, size=11, y=1.06, color='white')
 		return [c1, c2, cf1, cf2]
 
 	time = kwargs.get('time', np.arange(len(a)))
@@ -224,6 +237,7 @@ def animate_2Dx2(a, b, file, **kwargs):
 	n_decimals = kwargs.get('n_decimals', 2)
 	fps = kwargs.get('fps', 10)
 	dpi = kwargs.get('dpi', 300)
+	pad_inches = kwargs.get('pad_inches', 0)
 	N, M = a[0].shape[0], a[0].shape[1]
 
 	# Create uniform grid
@@ -260,27 +274,38 @@ def animate_2Dx2(a, b, file, **kwargs):
 	cf = [c1, c2, cf1, cf2]
 
 	# Format figure
-	ax1.tick_params(bottom="on", top="on", right="on", which='both', direction='in', labelbottom='off', length=2)
-	ax1.set_xticklabels([])
-	ax2.tick_params(bottom="on", top="on", right="on", which='both', direction='in', length=2)
+	# ax1.tick_params(bottom="on", top="on", right="on", which='both', direction='in', labelbottom='off', length=2)
+	# ax1.set_xticklabels([])
+	# ax2.tick_params(bottom="on", top="on", right="on", which='both', direction='in', length=2)
+
+	# ax1.tick_params(bottom="off", top="off", right="off", which='both',)
+	# ax1.set_xticklabels([])
+	# ax2.tick_params(bottom="off", top="off", right="off", which='both',)
+	# ax2.set_xticklabels([])
+
 	ax1.set_aspect(1)
 	ax2.set_aspect(1)
 	plt.xlim(np.min(x), np.max(x))
 	plt.ylim(np.min(y), np.max(y))
-	ax1.yaxis.set_ticks([-2, 0, 2])
-	ax2.yaxis.set_ticks([-2, 0, 2])
+	# ax1.yaxis.set_ticks([-2, 0, 2])
+	ax1.xaxis.set_ticks([])
+	ax1.yaxis.set_ticks([])
+	# ax2.yaxis.set_ticks([-2, 0, 2])
+	ax2.xaxis.set_ticks([])
+	ax2.yaxis.set_ticks([])
 
 	# Set title, circles and text
 	title = r'$t = ' + '{:.2f}'.format(time[0]) + '$'
-	ax1.set_title(title, size=12, y=1.05)
+	# ax1.set_title(title, size=11, y=1.06, color='white')
 	grey_color = '#dedede'
 	cyl1 = patches.Circle((0, 0), 0.5, linewidth=0.2, edgecolor='black', facecolor=grey_color, zorder=9999)
 	cyl2 = patches.Circle((0, 0), 0.5, linewidth=0.2, edgecolor='black', facecolor=grey_color, zorder=9999)
 	ax1.add_patch(cyl1)
 	ax2.add_patch(cyl2)
-	plt.subplots_adjust(hspace=0.05, bottom=0.15)
-	ax1.text(-1, 2.3, names[0])
-	ax2.text(-1, 2.3, names[1])
+	ax1.text(-1, 2.3, names[0], fontsize=11)
+	ax2.text(-1, 2.3, names[1], fontsize=11)
+	fig.tight_layout()
+	plt.subplots_adjust(bottom=0.03, hspace=0.05)
 
 	# Add colorbar
 	# if lim[0] < 0:
@@ -300,7 +325,8 @@ def animate_2Dx2(a, b, file, **kwargs):
 	# Animate
 	writer = animation.FFMpegWriter(fps=fps, extra_args=['-vcodec', 'libx264'])
 	anim = animation.FuncAnimation(fig, anim, frames=len(a))
-	anim.save(file, writer=writer, dpi=dpi)
+	savefig_kwargs = {'transparent':True, 'pad_inches':pad_inches}
+	anim.save(file, writer=writer, dpi=dpi, savefig_kwargs=savefig_kwargs)
 	return
 
 def animate_2Dx4(a, b, c, d, file, **kwargs):
@@ -475,6 +501,8 @@ def scatter(x, y, file='test.pdf', **kwargs):
 
 
 def density2D(x, y, file='test.pdf', nbins=20, **kwargs):
+	from matplotlib.ticker import FormatStrFormatter
+	import matplotlib.ticker as mticker
 	from scipy.stats import kde
 
 	x_label = kwargs.get('x_label', None)
@@ -482,6 +510,7 @@ def density2D(x, y, file='test.pdf', nbins=20, **kwargs):
 	x_lims = kwargs.get('x_lims', None)
 	y_lims = kwargs.get('y_lims', None)
 	cmap = kwargs.get('cmap', 'gist_heat')
+	n_decimals = kwargs.get('n_decimals', (2,3))
 
 	k = kde.gaussian_kde(np.array([x.flatten(),y.flatten()]))
 	xi, yi = np.mgrid[x.min():x.max():nbins * 1j, y.min():y.max():nbins * 1j]
@@ -491,20 +520,32 @@ def density2D(x, y, file='test.pdf', nbins=20, **kwargs):
 	ax.pcolormesh(xi, yi, zi.reshape(xi.shape), shading='gouraud', cmap=cmap)
 	ax.contour(xi, yi, zi.reshape(xi.shape), linewidths=0.5, cmap=cmap+'_r')
 
-	ax.tick_params(bottom="on", top="on", right="on", which='both', direction='in', length=2, color='black')
 	fig, ax = makeSquare(fig,ax)
 	plt.xlabel(r'$' + x_label + '$')
-	plt.ylabel(r'$' + y_label + '$')
+	plt.ylabel(r'$' + y_label + '$',labelpad=-7) #labelpad=-5 for uv
 	if x_lims is not None:
 		plt.xlim(x_lims[0], x_lims[1])
 	if y_lims is not None:
 		plt.ylim(y_lims[0], y_lims[1])
-	ax.xaxis.set_ticks=[-0.02, 0.00, 0.02]
-	ax.yaxis.set_ticks=[0.05, 0.01, 0.015]
+
+
+	fmt_str = r'${:.' + str(n_decimals) + 'f}$'
+	# ax.set_xtickslabels([fmt_str.format(t) for t in [-0.02, 0.00, 0.02]])
+	# ax.set_ytickslabels([fmt_str.format(t) for t in [0.00, 0.05, 0.01, 0.015]])
+	ax.tick_params(bottom="on", top="on", right="on", which='major', direction='in', length=2, color='black')
+	ax.xaxis.set_major_formatter(FormatStrFormatter('$%.'+str(n_decimals[0])+'f$'))
+	ax.yaxis.set_major_formatter(FormatStrFormatter('$%.'+str(n_decimals[1])+'f$'))
+	# ax.yaxis.set_major_locator(mticker.FixedLocator([0.00, 0.005, 0.01, 0.015])) # for normal
+	ax.yaxis.set_major_locator(mticker.FixedLocator([-0.01, 0.00, 0.01]))   # for shear stress
+	ax.xaxis.set_major_locator(mticker.FixedLocator([-0.02, 0.00, 0.02]))
+	# plt.set_yticks=[0.00, 0.005, 0.01, 0.015]
+	# plt.set_yticklabels=[0.00, 0.005, 0.01, 0.015]
+	# plt.set_xticks=[-0.02, 0.00, 0.02]
+	# plt.set_xticklabels=[-0.02, 0.00, 0.02]
 	ax.xaxis.set_zorder(99999)
 	ax.yaxis.set_zorder(99999)
 	# Show plot and save figure
-	plt.savefig(file, transparent=True, bbox_inches='tight')
+	plt.savefig(file, transparent=True, bbox_inches='tight', pad_inches=0)
 	return
 
 def plot2D_uv(u, cmap, lvls, lim, file, **kwargs):

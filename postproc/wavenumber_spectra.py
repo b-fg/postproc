@@ -87,16 +87,20 @@ def _pair_integrate_fast(ak, *args, **kwargs):
 	"""
 	from concurrent.futures import ThreadPoolExecutor
 	from pathos.multiprocessing import Pool, cpu_count
-	def spherical_integration(index):
-		k2_sum = 0
-		for i, k in enumerate(args):
-			k2_sum += k[index[i]] ** 2
-		k_mod = np.sqrt(k2_sum)
-		kint = int(k_mod / dk)
-		if kint >= k_res:
-			ak_integral[-1] += np.abs(ak[index])
-		else:
-			ak_integral[kint] += np.abs(ak[index])
+	def spherical_integration(index_list):
+		for index in index_list:
+			k2_sum = 0
+			for i, k in enumerate(args):
+				k2_sum += k[index[i]] ** 2
+			k_mod = np.sqrt(k2_sum)
+			kint = int(k_mod / dk)
+			if kint >= k_res:
+				ak_integral[-1] += np.abs(ak[index])
+			else:
+				ak_integral[kint] += np.abs(ak[index])
+	def chunks(l, n):
+		n = max(1, n)
+		return (l[i:i + n] for i in range(0, len(l), n))
 
 	workers = kwargs.get('workers', 1)
 	k_res = kwargs.get('k_res', 200)
@@ -111,14 +115,19 @@ def _pair_integrate_fast(ak, *args, **kwargs):
 	ak_integral = np.zeros(k_res)
 	k_mod_line = np.linspace(0, k_res - 1, k_res) * dk + dk / 2  # k values at half of each bandwidth
 
+
+	indices = [idx for idx in np.ndindex(ak.shape)]
+	chunk_size = int(ak.size/workers)
+	work_list = chunks(indices, chunk_size)
 	# Threading
 	# with ThreadPoolExecutor(max_workers=workers) as executor:
-	# 	_ = list(tqdm(executor.map(spherical_integration, np.ndindex(ak.shape)),
-	# 	                    total=ak.size))
+	# 	_ = list(tqdm(executor.map(spherical_integration, work_list), total=workers))
 
 	# Processing
+
+	# print(work_list[0])
 	with Pool(processes=workers) as pool:
-		_ = list(tqdm(pool.map(spherical_integration, np.ndindex(ak.shape)), total=ak.size))
+		_ = list(tqdm(pool.map(spherical_integration, work_list), total=workers))
 
 	return k_mod_line, ak_integral
 
