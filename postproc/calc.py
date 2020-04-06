@@ -472,7 +472,27 @@ def separation_points2(q, alphas, eps=0.1):
 	return alpha_u, alpha_l-360
 
 
-def wake_width(a, eps=0.001, cyl_pos=1.5, L=90):
+def wake_width(a, eps=0.0000001):
+	ww = np.zeros(a.shape)
+	ww[np.abs(a) > eps] = 1
+	return ww*wake_width0(a)
+
+def wake_width0(a, eps=0.001, cyl_pos=1.5, L=90):
+	b = np.zeros(a.shape)
+	for i in range(a.shape[0]):
+		col = np.where(np.abs(a[i,:])>eps)
+		if col[0].size >= 2:
+			min,max = np.min(col[0]),np.max(col[0])
+			b[i, min:max+1] = 1
+		elif col[0].size == 1:
+			min=col[0][0]
+			b[i, min:min+1] = 1
+		else:
+			continue
+	b[:int(cyl_pos * L)] = 0
+	return b
+
+def wake_width0_old(a, eps=0.001, cyl_pos=1.5, L=90):
 	ww = np.zeros(a.shape)
 	l, u = None, None
 	for i in range(a.shape[0]):
@@ -492,16 +512,6 @@ def wake_width(a, eps=0.001, cyl_pos=1.5, L=90):
 	ww[:int(cyl_pos*L)]=0
 	return ww
 
-
-def wake_width2(a, eps=0.00001):
-	ww = np.zeros(a.shape)
-	ww[np.abs(a) > eps] = 1
-	return ww
-
-def wake_width3(a, eps=0.0000001):
-	ww = np.zeros(a.shape)
-	ww[np.abs(a) > eps] = 1
-	return ww*wake_width(a)
 
 def corr(a,b):
 	am = np.mean(a)
