@@ -21,7 +21,7 @@ mpl.rc('xtick', labelsize=16)
 mpl.rc('ytick', labelsize=16)
 mpl.rcParams['text.latex.preamble'] = [r'\usepackage{amsmath}'] #for \text command
 plt.rcParams['animation.ffmpeg_path'] = r"/usr/bin/ffmpeg"
-mpl.rcParams['axes.linewidth'] = 0.5
+mpl.rcParams['axes.linewidth'] = 0.25
 
 # plt.switch_backend('AGG') #png
 # plt.switch_backend('PS')
@@ -67,6 +67,7 @@ def plot_2D(u, file='test.pdf', **kwargs):
 	n_ticks = kwargs.get('n_ticks', 10)
 	n_decimals = kwargs.get('n_decimals', 2)
 	case = kwargs.get('case', None)
+	axis_flag = kwargs.get('axis_flag', True)
 	annotate = kwargs.get('annotate', False)
 	eps = kwargs.get('eps', 0.0001)
 	cbar_flag = kwargs.get('cbar_flag', False)
@@ -77,6 +78,7 @@ def plot_2D(u, file='test.pdf', **kwargs):
 	plt.rc('font', size=font_size)  # use 13(JFM) or 16(SNH)
 	mpl.rc('xtick', labelsize=font_size)
 	mpl.rc('ytick', labelsize=font_size)
+	mpl.rcParams['axes.linewidth'] = 0.25
 	N, M = u.shape[0], u.shape[1]
 
 	# Create uniform grid
@@ -137,10 +139,13 @@ def plot_2D(u, file='test.pdf', **kwargs):
 	ax.set_aspect(1)
 	plt.xlim(np.min(x), np.max(x))
 	plt.ylim(np.min(y), np.max(y))
-	ax.tick_params(bottom="on", top="on", right="on", which='both', direction='in', length=2)
-	# ax.tick_params(axis='x', labelcolor='white')
-	ax.xaxis.set_zorder(99999)
-	ax.yaxis.set_zorder(99999)
+	if axis_flag:
+		ax.tick_params(bottom="on", top="on", right="on", which='both', direction='in', length=2)
+	else:
+		ax.tick_params(bottom="off", top="off", right="off", left="off")
+		ax.xaxis.set_ticks([])
+		ax.yaxis.set_ticks([])
+	# ax.tick_params(axis='both', labelcolor='white')
 
 	if case == 'taylor-green':
 		ax.xaxis.set_major_locator(plt.MultipleLocator(np.pi))
@@ -153,8 +158,10 @@ def plot_2D(u, file='test.pdf', **kwargs):
 	elif case == 'cylinder':
 		# ax.yaxis.set_ticks([-2, 0, 2])
 		grey_color = '#dedede'
-		cyl = patches.Circle((0, 0), 0.5, linewidth=0.2, edgecolor='black', facecolor=grey_color, zorder=9999)
+		cyl = patches.Circle((0, 0), 0.5, linewidth=0.25, edgecolor='black', facecolor=grey_color, zorder=100)
 		ax.add_patch(cyl)
+		line = patches.ConnectionPatch((0,-0.5),(0,0.5),'data', linewidth=0.25, zorder=150)
+		ax.add_patch(line)
 
 	# -- Add colorbar
 	if cbar_flag:
@@ -190,7 +197,6 @@ def plot_2D(u, file='test.pdf', **kwargs):
 						bbox=dict(boxstyle="round, pad=1", fc="w"))
 
 	# Show, save and close figure
-
 	plt.savefig(file, transparent=True, bbox_inches='tight', pad_inches=pad_inches, dpi=dpi)
 	# plt.draw()
 	# plt.clf()

@@ -287,6 +287,9 @@ def div(*args):
 		res += dd[i](a)
 	return res
 
+def _transpose(Aij):
+	return np.einsum('ij...->ji...', Aij)
+
 
 def _J3(u, v, w):
 	"""
@@ -331,17 +334,16 @@ def _J(u_i):
 
 def _S(u_i):
 	J = _J(u_i)
-	Jt = np.einsum('ij...->ji...', J)
-	return 0.5*(J + Jt)
+	return 0.5*(J + _transpose(J))
 
 
-def Tmag(T):
+def Aij_mag(Aij):
 	"""
 	:param T: n-order tensor
 	:return: Magnitude of T tensor
 	"""
 	# return np.linalg.norm(T, ord='fro', axis=(0,1))*np.sqrt(2)
-	return np.sqrt(2*np.einsum('ijkl,ijkl->kl',T,T))
+	return np.sqrt(2*np.einsum('ijkl,ijkl->kl',Aij,Aij))
 
 
 def S3(u, v, w):
@@ -470,7 +472,7 @@ def separation_points2(q, alphas, eps=0.1):
 	return alpha_u, alpha_l-360
 
 
-def wake_width(a, eps=0.001):
+def wake_width(a, eps=0.001, cyl_pos=1.5, L=90):
 	ww = np.zeros(a.shape)
 	l, u = None, None
 	for i in range(a.shape[0]):
@@ -487,14 +489,19 @@ def wake_width(a, eps=0.001):
 		if l is not None and u is not None:
 			ww[i,l:u+1] = 1
 		l, u = None, None
+	ww[:int(cyl_pos*L)]=0
 	return ww
 
 
-def wake_width2(a, eps=0.0001):
+def wake_width2(a, eps=0.00001):
 	ww = np.zeros(a.shape)
 	ww[np.abs(a) > eps] = 1
 	return ww
 
+def wake_width3(a, eps=0.0000001):
+	ww = np.zeros(a.shape)
+	ww[np.abs(a) > eps] = 1
+	return ww*wake_width(a)
 
 def corr(a,b):
 	am = np.mean(a)
