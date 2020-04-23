@@ -471,45 +471,25 @@ def separation_points2(q, alphas, eps=0.1):
 			break
 	return alpha_u, alpha_l-360
 
-
-def wake_width(a, eps=0.0000001):
+def wake_width_eps(a, eps=0.0025, cyl_pos=1.5, L=90):
 	ww = np.zeros(a.shape)
 	ww[np.abs(a) > eps] = 1
-	return ww*wake_width0(a)
+	ww[:int(cyl_pos * L)] = 0
+	return ww
 
-def wake_width0(a, eps=0.001, cyl_pos=1.5, L=90):
-	b = np.zeros(a.shape)
+def wake_width_length(a, eps=0.0025, cyl_pos=1.5, L=90):
+	ww = np.zeros(a.shape)
 	for i in range(a.shape[0]):
 		col = np.where(np.abs(a[i,:])>eps)
 		if col[0].size >= 2:
 			min,max = np.min(col[0]),np.max(col[0])
-			b[i, min:max+1] = 1
+			ww[i, min:max+1] = 1
 		elif col[0].size == 1:
 			min=col[0][0]
-			b[i, min:min+1] = 1
+			ww[i, min:min+1] = 1
 		else:
 			continue
-	b[:int(cyl_pos * L)] = 0
-	return b
-
-def wake_width0_old(a, eps=0.001, cyl_pos=1.5, L=90):
-	ww = np.zeros(a.shape)
-	l, u = None, None
-	for i in range(a.shape[0]):
-		for j in range(a.shape[1]):
-			if np.abs(a[i,j]) > eps:
-				# print('l',a[i,j],i,j)
-				l = j
-				break
-		for j in reversed(range(a.shape[1])):
-			if np.abs(a[i,j]) > eps:
-				# print('u',a[i,j],i,j)
-				u = j
-				break
-		if l is not None and u is not None:
-			ww[i,l:u+1] = 1
-		l, u = None, None
-	ww[:int(cyl_pos*L)]=0
+	ww[:int(cyl_pos * L)] = 0
 	return ww
 
 

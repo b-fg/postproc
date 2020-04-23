@@ -61,6 +61,7 @@ def plot_2D(u, file='test.pdf', **kwargs):
 	cmap = kwargs.get('cmap', 'Blues')
 	scaling = kwargs.get('scaling', 1)
 	shift = kwargs.get('shift', (0,0))
+	# window = kwargs.get('window', [(None,None),(None,None)])
 	xwindow = kwargs.get('xwindow', None)
 	ywindow = kwargs.get('ywindow', None)
 	title = kwargs.get('title', '')
@@ -80,6 +81,8 @@ def plot_2D(u, file='test.pdf', **kwargs):
 	mpl.rc('ytick', labelsize=font_size)
 	mpl.rcParams['axes.linewidth'] = 0.25
 	N, M = u.shape[0], u.shape[1]
+	# xwindow = (window[0][0], window[0][1])
+	# ywindow = (window[1][0], window[1][1])
 
 	# Create uniform grid
 	if 'grid' in kwargs:
@@ -145,7 +148,7 @@ def plot_2D(u, file='test.pdf', **kwargs):
 		ax.tick_params(bottom="off", top="off", right="off", left="off")
 		ax.xaxis.set_ticks([])
 		ax.yaxis.set_ticks([])
-	# ax.tick_params(axis='both', labelcolor='white')
+	# ax.tick_params(axis='y', labelcolor='white')
 
 	if case == 'taylor-green':
 		ax.xaxis.set_major_locator(plt.MultipleLocator(np.pi))
