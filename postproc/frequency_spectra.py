@@ -8,6 +8,7 @@
 # Imports
 import numpy as np
 from scipy import signal
+from scipy.interpolate import interp1d
 
 
 # Functions
@@ -24,7 +25,6 @@ def freq_spectra(t, u, **kwargs):
 	:return: freqs 1D array and uk 1D array.
 	"""
 	import numpy as np
-	from scipy.interpolate import interp1d
 
 	resample = kwargs.get('resample', True)
 	lowpass = kwargs.get('lowpass', True)
@@ -179,3 +179,12 @@ def _low_pass_filter(u):
 	"""
 	b, a = signal.butter(3, 0.4, 'low') # 2nd arg: Fraction of fs that wants to be filtered
 	return signal.filtfilt(b, a, u)
+
+def _resample(t,u):
+	u = u - np.mean(u)
+	u_function = interp1d(t, u, kind='cubic')
+	t_min, t_max = np.min(t), np.max(t)
+	dt = (t_max - t_min) / len(t)
+	t_regular = np.arange(t_min, t_max, dt)[:-1]  # Skip last one because can be problematic if > than actual t_max
+	u = u_function(t_regular)
+	return t_regular,u

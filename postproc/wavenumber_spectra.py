@@ -19,8 +19,8 @@ def spectra(u_i, x_i, **kwargs):
 	:param kwargs: k_res for the resolution of k_mod_line which defines the bandwitdh dk.
 	:return: k_mod 1D array and ke_integral 1D array.
 	"""
-	if len(u_i) > 3 or len(u_i) < 1 or len(x_i) > 3 or len(x_i) < 1 or any([u.ndim != len(x_i) for u in u_i]):
-		raise ValueError('Invalid field dimensions')
+	# if len(u_i) > 3 or len(u_i) < 1 or len(x_i) > 3 or len(x_i) < 1 or any([u.ndim != len(x_i) for u in u_i]):
+	# 	raise ValueError('Invalid field dimensions')
 	# Wavenumbers
 	k_i = _wavenumbers(*x_i) # k_i = (kx, ky, kz)
 	# FFT to compute KE
@@ -30,12 +30,57 @@ def spectra(u_i, x_i, **kwargs):
 		uk = np.fft.fftn(u)/u.size # FFT
 		ke += uk*uk.conjugate() # KE
 	ke = 0.5*ke
+	# print(ke.shape,len(k_i))
 	# Calc spectra
 	workers = kwargs.get('workers', 1)
 	if workers > 1:
 		return _pair_integrate_fast(ke, *k_i, **kwargs)
 	else:
 		return _pair_integrate(ke, *k_i, **kwargs)
+
+def filter(a, x_i, mode='A', k_lim=1, **kwargs):
+	"""
+	Low/High pass spatial structures by choping the range of wavenumbers according to k_lim
+	:param a: Field to be filtered
+	:param x_i: Tuple of spatial 1-D vectors
+	:param mode: Filter mode with 'N' for no-filter, 'L' for lowpass, and 'H' for highpass
+	:param k_lim: limiting wavenumber
+	:return: Filter field
+	"""
+	k_i = _wavenumbers(*x_i) # k_i = (kx, ky, kz)
+	ak = np.fft.rfftn(a) / a.size  # FFT
+
+
+	print(ak.shape, k_i[0].shape, k_i[1].shape)
+	print(np.sqrt(np.max(k_i[0]**2)+np.max(k_i[1]**2)), k_lim)
+	if mode == 'A':
+		return np.fft.irfftn(ak) * a.size
+	elif mode == 'L':
+		for index in np.ndindex(ak.shape):
+			k2_sum = 0
+			for i, k in enumerate(k_i):
+				k2_sum += k[index[i]] ** 2
+			k_mod = np.sqrt(k2_sum)
+			if k_mod > k_lim: ak[index] = 0
+		return np.fft.irfftn(ak) * a.size
+	elif mode == 'H':
+		for index in np.ndindex(ak.shape):
+			k2_sum = 0
+			for i, k in enumerate(k_i):
+				k2_sum += k[index[i]] ** 2
+			k_mod = np.sqrt(k2_sum)
+			if k_mod < k_lim: ak[index] = 0
+		return np.fft.irfftn(ak) * a.size
+	else:
+		raise (Warning, 'mode not reconigned')
+		return np.fft.irfftn(ak) * a.size
+
+	# Remove lo
+	# workers = kwargs.get('workers', 1)
+	# if workers > 1:
+	# 	return _pair_integrate_fast(ke, *k_i, **kwargs)
+	# else:
+	# 	return _pair_integrate(ke, *k_i, **kwargs)
 
 
 def _pair_integrate(ak, *args, **kwargs):

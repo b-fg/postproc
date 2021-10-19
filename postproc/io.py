@@ -374,3 +374,7 @@ def read_object(file):
 def read_txt(file, skiprows=0, delimiter=','):
 	lines = np.loadtxt(file, skiprows=skiprows, delimiter=delimiter, unpack=True)
 	return lines
+
+def write_txt(file, X, fmt='%.6e', header=None, delimiter=None):
+	np.savetxt(file, X, fmt=fmt, header=header, delimiter=delimiter)
+	return

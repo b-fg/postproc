@@ -163,8 +163,26 @@ def plot_2D(u, file='test.pdf', **kwargs):
 		grey_color = '#dedede'
 		cyl = patches.Circle((0, 0), 0.5, linewidth=0.25, edgecolor='black', facecolor=grey_color, zorder=100)
 		ax.add_patch(cyl)
-		line = patches.ConnectionPatch((0,-0.5),(0,0.5),'data', linewidth=0.25, zorder=150)
-		ax.add_patch(line)
+		if shift[0] == 0:
+			line = patches.ConnectionPatch((0,-0.5),(0,0.5),'data', linewidth=0.25, zorder=150)
+			ax.add_patch(line)
+
+	elif case == 'ellipse_1':
+		# ax.yaxis.set_ticks([-2, 0, 2])
+		grey_color = '#dedede'
+		ellipse = patches.Ellipse((0, 0), width=2, height=1, linewidth=0.25, edgecolor='black', facecolor=grey_color, zorder=100)
+		ax.add_patch(ellipse)
+		# line = patches.ConnectionPatch((0,-0.5),(0,0.5),'data', linewidth=0.25, zorder=150)
+		# ax.add_patch(line)
+
+
+	elif case == 'ellipse_2':
+		# ax.yaxis.set_ticks([-2, 0, 2])
+		grey_color = '#dedede'
+		ellipse = patches.Ellipse((0, 0), width=0.5, height=1, linewidth=0.25, edgecolor='black', facecolor=grey_color, zorder=100)
+		ax.add_patch(ellipse)
+		# line = patches.ConnectionPatch((0,-0.5),(0,0.5),'data', linewidth=0.25, zorder=150)
+		# ax.add_patch(line)
 
 	# -- Add colorbar
 	if cbar_flag:
@@ -206,130 +224,167 @@ def plot_2D(u, file='test.pdf', **kwargs):
 	return
 
 def animate_2Dx2(a, b, file, **kwargs):
-	plt.rc('font', size=10)
-	mpl.rc('xtick', labelsize=9)
-	mpl.rc('ytick', labelsize=9)
-	mpl.rcParams['axes.linewidth'] = 0.1
-
 	global c1, c2, cf1, cf2, cf
 
 	def anim(i):
 		global c1, c2, cf1, cf2, cf
-		for c in cf1.collections:
-			c.remove()  # removes only the contours, leaves the rest intact
-		for c in cf2.collections:
-			c.remove()  # removes only the contours, leaves the rest intact
-		for c in c1.collections:
-			c.remove()  # removes only the contours, leaves the rest intact
-		for c in c2.collections:
-			c.remove()  # removes only the contours, leaves the rest intact
+		if contourf:
+			for c in cf1.collections:
+				c.remove()  # removes only the contours, leaves the rest intact
+			for c in cf2.collections:
+				c.remove()  # removes only the contours, leaves the rest intact
+		if contour:
+			for c in c1.collections:
+				c.remove()  # removes only the contours, leaves the rest intact
+			for c in c2.collections:
+				c.remove()  # removes only the contours, leaves the rest intact
 
-		c1 = ax1.contour(x.T, y.T, a[i].T, clvls, linewidths=0.05, colors='k')
-		c2 = ax2.contour(x.T, y.T, b[i].T, clvls, linewidths=0.05, colors='k')
-		cf1 = ax1.contourf(x.T, y.T, a[i].T, levels, vmin=lim[0], vmax=lim[1], norm=norm, cmap=cmap, extend='both')
-		cf2 = ax2.contourf(x.T, y.T, b[i].T, levels, vmin=lim[0], vmax=lim[1], norm=norm, cmap=cmap, extend='both')
+		# title = r'$t = ' + '{:.2f}'.format(time[i]) + '$'
+		# ax1.set_title(title, size=11, y=1.06, color='black')
 
-		title = r'$t = ' + '{:.2f}'.format(time[i]) + '$'
-		# ax1.set_title(title, size=11, y=1.06, color='white')
-		return [c1, c2, cf1, cf2]
+		cf = []
+		if contour:
+			c1 = ax1.contour(x, y, a[i], clvls, linewidths=0.1, colors=contour_color)
+			c2 = ax2.contour(x, y, b[i], clvls, linewidths=0.1, colors=contour_color)
+			cf.append(c1)
+			cf.append(c2)
+		if contourf:
+			cf1 = ax1.contourf(x, y, a[i], lvls, vmin=lim_max[0], vmax=lim_max[1], cmap=cmap, extend='both')
+			cf2 = ax2.contourf(x, y, b[i], lvls, vmin=lim_max[0], vmax=lim_max[1], cmap=cmap, extend='both')
+			cf.append(cf1)
+			cf.append(cf2)
+		return cf
 
-	time = kwargs.get('time', np.arange(len(a)))
+	from matplotlib.ticker import FormatStrFormatter, MultipleLocator, FuncFormatter
+	contour = kwargs.get('contour', False)
+	contour_color = kwargs.get('contour_color', 'black')
+	contourf = kwargs.get('contourf', True)
 	levels = kwargs.get('levels', 50)
 	lim = kwargs.get('lim', [np.min(a[0]), np.max(a[0])])
+	lim_max = kwargs.get('lim_max', lim)
 	cmap = kwargs.get('cmap', 'Blues')
 	scaling = kwargs.get('scaling', 1)
-	xshift = kwargs.get('xshift', 0)
-	yshift = kwargs.get('yshift', 0)
-	field_name = kwargs.get('field_name', '')
-	names = kwargs.get('names', ['',''])
-	n_ticks = kwargs.get('n_ticks', 20)
+	shift = kwargs.get('shift', (0, 0))
+	# window = kwargs.get('window', [(None,None),(None,None)])
+	xwindow = kwargs.get('xwindow', None)
+	ywindow = kwargs.get('ywindow', None)
+	title = kwargs.get('title', '')
+	n_ticks = kwargs.get('n_ticks', 10)
 	n_decimals = kwargs.get('n_decimals', 2)
+	case = kwargs.get('case', None)
+	axis_flag = kwargs.get('axis_flag', True)
+	annotate = kwargs.get('annotate', False)
+	eps = kwargs.get('eps', 0.0001)
+	cbar_flag = kwargs.get('cbar_flag', False)
+	font_size = kwargs.get('font_size', 16)
+	pad_inches = kwargs.get('pad_inches', 0)
+	time = kwargs.get('time', np.arange(len(a)))
+	names = kwargs.get('names', ['',''])
 	fps = kwargs.get('fps', 10)
 	dpi = kwargs.get('dpi', 300)
-	pad_inches = kwargs.get('pad_inches', 0)
+
+	plt.rc('font', size=font_size)  # use 13(JFM) or 16(SNH)
+	mpl.rcParams['axes.linewidth'] = 0.15
+	mpl.rc('xtick', labelsize=font_size)
+	mpl.rc('ytick', labelsize=font_size)
 	N, M = a[0].shape[0], a[0].shape[1]
+	# xwindow = (window[0][0], window[0][1])
+	# ywindow = (window[1][0], window[1][1])
 
 	# Create uniform grid
 	if 'grid' in kwargs:
 		grid = kwargs['grid']
 		x, y = grid[0] / scaling, grid[1] / scaling
 	elif 'x' in kwargs and 'y' in kwargs:
-		x = np.transpose(kwargs.get('x')) / scaling + xshift
-		y = np.transpose(kwargs.get('y')) / scaling + yshift
+		x = np.transpose(kwargs.get('x')) / scaling + shift[0]
+		y = np.transpose(kwargs.get('y')) / scaling + shift[1]
+		x, y = np.meshgrid(x, y)
+	elif 'x_lims' in kwargs and 'y_lims' in kwargs:
+		xlims = kwargs.get('x_lims')
+		ylims = kwargs.get('y_lims')
+		x, y = np.linspace(xlims[0] / scaling, xlims[1] / scaling, N), np.linspace(ylims[0] / scaling, ylims[1] / scaling, M)
+		x, y = x + shift[0], y + shift[1]
 		x, y = np.meshgrid(x, y)
 	else:
 		xmin, xmax = 0, N - 1
 		ymin, ymax = -M / 2, M / 2 - 1
 		x, y = np.linspace(xmin / scaling, xmax / scaling, N), np.linspace(ymin / scaling, ymax / scaling, M)
-		x, y = x + xshift, y + yshift
+		x, y = x + shift[0], y + shift[1]
 		x, y = np.meshgrid(x, y)
 
 	fig, ax = plt.subplots(2, 1)
 	ax1, ax2 = ax[0], ax[1]
 
-	if lim[0] < 0:
-		clvls = levels
+	# Create contour(f)
+	if lim[0] < 0 and lim[1] > 0:
+		ll = np.linspace(lim[0], -eps, int(levels / 2))
+		rr = np.linspace(eps, lim[1], int(levels / 2))
+		lvls = np.append(ll, rr)
+		if contour:
+			extra_levels = 5
+			dl = lvls[1] - lvls[0]
+			clvls = np.append(lvls, np.linspace(lim[1] + dl, lim[1] + extra_levels * dl, extra_levels))
 	else:
-		extra_levels = 5
-		dl = levels[1] - levels[0]
-		clvls = np.append(levels, np.linspace(lim[1] + dl, lim[1] + extra_levels * dl, extra_levels))
-	norm = mpl_colors.Normalize(vmin=lim[0], vmax=lim[1])
+		clvls = levels
+		lvls = np.linspace(lim[0], lim[1], levels + 1)
 
-	c1 = ax1.contour(x.T, y.T, a[0].T, clvls, linewidths=0.05, colors='k')
-	c2 = ax2.contour(x.T, y.T, b[0].T, clvls, linewidths=0.05, colors='k')
-	cf1 = ax1.contourf(x.T, y.T, a[0].T, levels, vmin=lim[0], vmax=lim[1], norm=norm, cmap=cmap, extend='both')
-	cf2 = ax2.contourf(x.T, y.T, b[0].T, levels, vmin=lim[0], vmax=lim[1], norm=norm, cmap=cmap, extend='both')
+	for k in range(len(a)):
+		a[k] = a[k].T; b[k] = b[k].T
+		if xwindow is not None:
+			x_args = np.where(np.logical_and(np.any(x > xwindow[0], axis=0), np.any(x < xwindow[1], axis=0)))[0]
+			x = x[:, x_args]
+			y = y[:, x_args]
+			a[k] = a[k][:, x_args]
+			b[k] = b[k][:, x_args]
+		if ywindow is not None:
+			y_args = np.where(np.logical_and(np.any(y > ywindow[0], axis=1), np.any(y < ywindow[1], axis=1)))[0]
+			x = x[y_args, :]
+			y = y[y_args, :]
+			a[k] = a[k][y_args, :]
+			b[k] = b[k][y_args, :]
 
-	cf = [c1, c2, cf1, cf2]
+	cf = []
+	if contour:
+		c1 = ax1.contour(x, y, a[0], clvls, linewidths=0.1, colors=contour_color)
+		c2 = ax2.contour(x, y, b[0], clvls, linewidths=0.1, colors=contour_color)
+		cf.append(c1)
+		cf.append(c2)
+	if contourf:
+		cf1 = ax1.contourf(x, y, a[0], lvls, vmin=lim_max[0], vmax=lim_max[1], cmap=cmap, extend='both')
+		cf2 = ax2.contourf(x, y, b[0], lvls, vmin=lim_max[0], vmax=lim_max[1], cmap=cmap, extend='both')
+		cf.append(cf1)
+		cf.append(cf2)
 
 	# Format figure
-	# ax1.tick_params(bottom="on", top="on", right="on", which='both', direction='in', labelbottom='off', length=2)
-	# ax1.set_xticklabels([])
-	# ax2.tick_params(bottom="on", top="on", right="on", which='both', direction='in', length=2)
-
-	# ax1.tick_params(bottom="off", top="off", right="off", which='both',)
-	# ax1.set_xticklabels([])
-	# ax2.tick_params(bottom="off", top="off", right="off", which='both',)
-	# ax2.set_xticklabels([])
-
 	ax1.set_aspect(1)
 	ax2.set_aspect(1)
 	plt.xlim(np.min(x), np.max(x))
 	plt.ylim(np.min(y), np.max(y))
-	# ax1.yaxis.set_ticks([-2, 0, 2])
-	ax1.xaxis.set_ticks([])
-	ax1.yaxis.set_ticks([])
-	# ax2.yaxis.set_ticks([-2, 0, 2])
-	ax2.xaxis.set_ticks([])
-	ax2.yaxis.set_ticks([])
+	if axis_flag:
+		ax1.tick_params(bottom="on", top="on", right="on", which='both', direction='in', length=2)
+		ax2.tick_params(bottom="on", top="on", right="on", which='both', direction='in', length=2)
+	else:
+		ax1.tick_params(bottom="off", top="off", right="off", left="off")
+		ax1.xaxis.set_ticks([])
+		ax1.yaxis.set_ticks([])
+		ax2.tick_params(bottom="off", top="off", right="off", left="off")
+		ax2.xaxis.set_ticks([])
+		ax2.yaxis.set_ticks([])
+		# ax1.tick_params(axis='y', labelcolor='white')
+		# ax2.tick_params(axis='y', labelcolor='white')
 
 	# Set title, circles and text
-	title = r'$t = ' + '{:.2f}'.format(time[0]) + '$'
-	# ax1.set_title(title, size=11, y=1.06, color='white')
+	# title = r'$t = ' + '{:.2f}'.format(time[0]) + '$'
+	ax1.set_title(title, size=11, y=1.06, color='black')
 	grey_color = '#dedede'
 	cyl1 = patches.Circle((0, 0), 0.5, linewidth=0.2, edgecolor='black', facecolor=grey_color, zorder=9999)
 	cyl2 = patches.Circle((0, 0), 0.5, linewidth=0.2, edgecolor='black', facecolor=grey_color, zorder=9999)
 	ax1.add_patch(cyl1)
 	ax2.add_patch(cyl2)
-	ax1.text(-1, 2.3, names[0], fontsize=11)
-	ax2.text(-1, 2.3, names[1], fontsize=11)
+	ax1.text(-1.25, -2.75, names[0], fontsize=11)
+	ax2.text(-1.25, -2.75, names[1], fontsize=11)
 	fig.tight_layout()
 	plt.subplots_adjust(bottom=0.03, hspace=0.05)
-
-	# Add colorbar
-	# if lim[0] < 0:
-	#	 tick1 = np.linspace(lim[0], 0, n_ticks / 2)
-	#	 dl = tick1[1] - tick1[0]
-	#	 tick2 = np.linspace(dl, lim[1], n_ticks / 2 - 1)
-	#	 ticks = np.append(tick1, tick2)
-	# else:
-	#	 ticks = np.linspace(lim[0], lim[1], n_ticks + 1)
-	# cbar_ax = plt.colorbar(cf2, ax=[ax1, ax2], extend='both', norm=norm).ax
-	# cbar_ax.set_title(field_name, y=1.02, loc='left', size=12)
-	# fmt_str = r'${:.' + str(n_decimals) + 'f}$'
-	# cbar_ax.set_yticklabels([fmt_str.format(t) for t in ticks])
-	# cbar_ax.yaxis.set_tick_params(pad=5, direction='out', size=1)  # your number may vary
-	# cbar_ax.set_title(field_name, x=1, y=1.02, loc='left', size=12)
 
 	# Animate
 	writer = animation.FFMpegWriter(fps=fps, extra_args=['-vcodec', 'libx264'])
@@ -1992,7 +2047,7 @@ def plotLogLogSpatialSpectra(file, k, ak):
 	# plt.text(x=1e-2, y=1, s='$-3$', color='black')
 
 	# Show plot and save figure
-	plt.show()
+	# plt.show()
 	plt.savefig(file, transparent=True, bbox_inches='tight')
 	return
 
@@ -2008,12 +2063,13 @@ def plotLogLogSpatialSpectra_list(k_list, ak_list, file='test.pdf', **kwargs):
 	"""
 	fig, ax = plt.subplots(1, 1)
 	names = kwargs.get('names', ['case '+str(i) for i in range(len(k_list))])
-	xlabel = kwargs.get('xlabel', 'kD/(2\pi)')
-	ylabel = kwargs.get('ylabel', None)
+	xlabel = kwargs.get('xlabel', r'$kD/(2\pi)$')
+	ylabel = kwargs.get('ylabel', r'$E(k)$')
 
 	# Show lines
 	for i, (k, ak) in enumerate(zip(k_list, ak_list)):
-		plt.loglog(k, ak, color=colors[i], lw=1, label='$\mathrm{'+names[i]+'}$')
+		# plt.loglog(k, ak, color=colors[i], lw=1, label='$\mathrm{'+names[i]+'}$')
+		plt.loglog(k, ak, color=colors[i], lw=1, label=names[i])
 
 	for i in np.arange(1):
 		x, y = loglogLine(p2=(np.max(k_list[0]), 1e-7*40**i), p1x=np.min(k_list[0]), m=-5/3)
@@ -2033,8 +2089,8 @@ def plotLogLogSpatialSpectra_list(k_list, ak_list, file='test.pdf', **kwargs):
 
 	# Edit frame, labels and legend
 	ax.tick_params(bottom="on", top="on", which='both', direction='in')
-	plt.xlabel(r'$'+xlabel+'$')
-	plt.ylabel(r'$'+ylabel+'$')
+	plt.xlabel(xlabel)
+	plt.ylabel(ylabel)
 	leg = plt.legend(loc='lower left')
 	leg.get_frame().set_edgecolor('black')
 	leg.get_frame().set_facecolor('white')
